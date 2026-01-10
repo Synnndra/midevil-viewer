@@ -20,6 +20,7 @@ const elements = {
     sidebar: document.getElementById('sidebar'),
     filterToggle: document.getElementById('filterToggle'),
     graveyardToggle: document.getElementById('graveyardToggle'),
+    orcsToggle: document.getElementById('orcsToggle'),
     filterGroups: document.getElementById('filterGroups'),
     activeFilters: document.getElementById('activeFilters'),
     clearFilters: document.getElementById('clearFilters'),
@@ -46,6 +47,7 @@ let graveyardIds = new Set();
 // ============================================
 elements.filterToggle.addEventListener('click', toggleSidebar);
 elements.graveyardToggle.addEventListener('change', fetchCollection);
+elements.orcsToggle.addEventListener('change', applyFilters);
 elements.clearFilters.addEventListener('click', clearFilters);
 elements.sortSelect.addEventListener('change', applySort);
 elements.searchBtn.addEventListener('click', searchById);
@@ -333,13 +335,25 @@ function setupFilters() {
 }
 
 function applyFilters() {
-    if (Object.keys(activeFilters).length === 0) {
+    const showOrcsOnly = elements.orcsToggle.checked;
+
+    if (Object.keys(activeFilters).length === 0 && !showOrcsOnly) {
         filteredNFTs = [...allNFTs];
     } else {
         filteredNFTs = allNFTs.filter(nft => {
-            return Object.entries(activeFilters).every(([type, values]) =>
-                values.includes(nft.traits[type])
-            );
+            // Check trait filters
+            const matchesTraits = Object.keys(activeFilters).length === 0 ||
+                Object.entries(activeFilters).every(([type, values]) =>
+                    values.includes(nft.traits[type])
+                );
+
+            // Check Orcs filter - look for "Orc" in any trait value
+            const isOrc = !showOrcsOnly ||
+                Object.values(nft.traits).some(value =>
+                    value.toLowerCase().includes('orc')
+                );
+
+            return matchesTraits && isOrc;
         });
     }
 
@@ -382,7 +396,8 @@ function renderActiveFilters() {
 
 function clearFilters() {
     activeFilters = {};
-    document.querySelectorAll('.filter-checkbox').forEach(cb => cb.checked = false);
+    elements.orcsToggle.checked = false;
+    document.querySelectorAll('.filter-groups .filter-checkbox').forEach(cb => cb.checked = false);
     applyFilters();
 }
 
