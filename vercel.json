@@ -32,6 +32,10 @@
       "dest": "/api/helius.js"
     },
     {
+      "src": "/api/collection",
+      "dest": "/api/collection.js"
+    },
+    {
       "src": "/(.*)",
       "dest": "/$1"
     }

@@ -3,8 +3,6 @@
 // ============================================
 // CONFIGURATION
 // ============================================
-const MIDEVIL_COLLECTION = 'w44WvLKRdLGye2ghhDJBxcmnWpBo31A1tCBko2G6DgW';
-const GRAVEYARD_COLLECTION = 'DpYLtgV5XcWPt3TM9FhXEh8uNg6QFYrj3zCGZxpcA3vF';
 const PLACEHOLDER_IMAGE = 'Placeholder.jpg';
 
 // ============================================
@@ -16,11 +14,10 @@ const elements = {
     totalCount: document.getElementById('totalCount'),
     sortSelect: document.getElementById('sortSelect'),
     searchInput: document.getElementById('searchInput'),
-    searchBtn: document.getElementById('searchBtn'),
     sidebar: document.getElementById('sidebar'),
     filterToggle: document.getElementById('filterToggle'),
     graveyardToggle: document.getElementById('graveyardToggle'),
-    orcsToggle: document.getElementById('orcsToggle'),
+    oneOfOnesToggle: document.getElementById('oneOfOnesToggle'),
     filterGroups: document.getElementById('filterGroups'),
     activeFilters: document.getElementById('activeFilters'),
     clearFilters: document.getElementById('clearFilters'),
@@ -30,7 +27,8 @@ const elements = {
     detailsTitle: document.getElementById('detailsTitle'),
     detailsImage: document.getElementById('detailsImage'),
     detailsTraits: document.getElementById('detailsTraits'),
-    detailsMint: document.getElementById('detailsMint')
+    detailsMint: document.getElementById('detailsMint'),
+    downloadBtn: document.getElementById('downloadBtn')
 };
 
 // ============================================
@@ -40,19 +38,25 @@ let allNFTs = [];
 let filteredNFTs = [];
 let activeFilters = {};
 let traitCounts = {};
-let graveyardIds = new Set();
+
+// Pagination
+const ITEMS_PER_PAGE = 50;
+let currentPage = 0;
+let isLoadingMore = false;
 
 // ============================================
 // EVENT LISTENERS
 // ============================================
 elements.filterToggle.addEventListener('click', toggleSidebar);
 elements.graveyardToggle.addEventListener('change', fetchCollection);
-elements.orcsToggle.addEventListener('change', applyFilters);
+elements.oneOfOnesToggle.addEventListener('change', applyFilters);
 elements.clearFilters.addEventListener('click', clearFilters);
 elements.sortSelect.addEventListener('change', applySort);
-elements.searchBtn.addEventListener('click', searchById);
 elements.searchInput.addEventListener('keypress', e => {
     if (e.key === 'Enter') searchById();
+});
+elements.searchInput.addEventListener('input', () => {
+    if (elements.searchInput.value === '') searchById();
 });
 
 elements.closeDetails.addEventListener('click', closeDetails);
@@ -69,90 +73,39 @@ document.addEventListener('click', (e) => {
 // ============================================
 // API FUNCTIONS
 // ============================================
-async function fetchGraveyardIds() {
-    graveyardIds.clear();
-    let page = 1;
-    let hasMore = true;
-
-    while (hasMore) {
-        const response = await fetch('/api/helius', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ collection: GRAVEYARD_COLLECTION, page })
-        });
-
-        if (!response.ok) break;
-
-        const data = await response.json();
-        const items = data.items || [];
-
-        items.forEach(nft => graveyardIds.add(nft.id));
-
-        hasMore = items.length === 1000;
-        page++;
-    }
-}
+// One cached request for the whole set (see api/collection.js). Burnt items are already removed
+// and image URLs are already resolved on the server.
+let fetchToken = 0;
 
 async function fetchCollection() {
+    const token = ++fetchToken; // ignore results from an older request if the toggle flips mid-load
     showLoading(true);
     hideError();
     allNFTs = [];
     filteredNFTs = [];
     activeFilters = {};
 
-    const showGraveyard = elements.graveyardToggle.checked;
-
-    // If showing main collection, first get graveyard IDs to exclude
-    if (!showGraveyard && graveyardIds.size === 0) {
-        await fetchGraveyardIds();
-    }
-
-    const collection = showGraveyard ? GRAVEYARD_COLLECTION : MIDEVIL_COLLECTION;
+    const set = elements.graveyardToggle.checked ? 'graveyard' : 'main';
 
     try {
-        let page = 1;
-        let hasMore = true;
+        const response = await fetch(`/api/collection?set=${set}`);
+        if (!response.ok) throw new Error('API request failed');
+        const data = await response.json();
+        if (token !== fetchToken) return;
 
-        while (hasMore) {
-            const response = await fetch('/api/helius', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ collection, page })
-            });
-
-            if (!response.ok) throw new Error('API request failed');
-
-            const data = await response.json();
-            const items = data.items || [];
-
-            items.forEach(nft => {
-                const name = nft.content?.metadata?.name || '';
-                const isBurnt = nft.burnt === true;
-                const hasGraveyardInName = name.toLowerCase().includes('graveyard');
-
-                // If showing main collection, exclude graveyard NFTs
-                if (!showGraveyard) {
-                    if (graveyardIds.has(nft.id) || hasGraveyardInName || isBurnt) {
-                        return; // Skip this NFT
-                    }
-                }
-
-                const number = extractNumber(name);
-                const displayName = name ? name.replace(/#?\d+/, `#${number}`) : 'Unknown';
-
-                allNFTs.push({
-                    id: nft.id,
-                    name: displayName,
-                    number: number,
-                    imageUrl: getImageUrl(nft),
-                    traits: extractTraits(nft.content?.metadata?.attributes || []),
-                    mint: nft.id
-                });
-            });
-
-            hasMore = items.length === 1000;
-            page++;
-        }
+        allNFTs = (data.items || []).map(nft => {
+            const number = extractNumber(nft.name);
+            return {
+                id: nft.id,
+                name: nft.name ? nft.name.replace(/#?\d+/, `#${number}`) : 'Unknown',
+                number: number,
+                imageUrl: nft.image,
+                thumbnailUrl: nft.thumb,
+                thumbnailFallback: nft.thumbFallback || '',
+                traits: nft.traits || {},
+                mint: nft.id
+            };
+        });
 
         if (allNFTs.length === 0) {
             showError('No NFTs found in the collection');
@@ -164,6 +117,7 @@ async function fetchCollection() {
         setupFilters();
         applySort();
     } catch (err) {
+        if (token !== fetchToken) return;
         showError('Failed to fetch collection: ' + err.message);
     }
 
@@ -175,39 +129,6 @@ function extractNumber(name) {
     return match ? parseInt(match[1]) + 1 : 0;
 }
 
-function getImageUrl(nft) {
-    // Try to get optimized/smaller image first
-    const links = nft.content?.links || {};
-    const files = nft.content?.files || [];
-
-    // Prefer CDN links which are usually faster
-    if (links.image) {
-        // Add size parameter if it's an Arweave or IPFS gateway
-        let url = links.image;
-        if (url.includes('arweave.net') || url.includes('ipfs')) {
-            // Return as-is, these are usually already optimized
-            return url;
-        }
-        return url;
-    }
-
-    // Fall back to first file
-    if (files.length > 0) {
-        return files[0].uri || files[0].cdn_uri || '';
-    }
-
-    return '';
-}
-
-function extractTraits(attributes) {
-    const traits = {};
-    attributes.forEach(attr => {
-        if (attr.trait_type && attr.value) {
-            traits[attr.trait_type] = attr.value;
-        }
-    });
-    return traits;
-}
 
 // ============================================
 // UI FUNCTIONS
@@ -287,13 +208,16 @@ function setupFilters() {
                 <span class="chevron">+</span>
             </div>
             <div class="filter-options" style="display: none;">
-                ${sortedValues.map(([value, count]) => `
-                    <label class="filter-option" data-trait="${traitType}" data-value="${value}">
-                        <input type="checkbox" class="filter-checkbox">
-                        <span class="filter-value">${value}</span>
-                        <span class="count">${count}</span>
-                    </label>
-                `).join('')}
+                <input type="text" class="filter-search" placeholder="Search ${traitType}...">
+                <div class="filter-options-list">
+                    ${sortedValues.map(([value, count]) => `
+                        <label class="filter-option" data-trait="${traitType}" data-value="${value}">
+                            <input type="checkbox" class="filter-checkbox">
+                            <span class="filter-value">${value}</span>
+                            <span class="count">${count}</span>
+                        </label>
+                    `).join('')}
+                </div>
             </div>
         `;
 
@@ -304,6 +228,22 @@ function setupFilters() {
             const isHidden = options.style.display === 'none';
             options.style.display = isHidden ? 'flex' : 'none';
             chevron.textContent = isHidden ? '−' : '+';
+            
+            // Focus search input when opened
+            if (isHidden) {
+                const searchInput = group.querySelector('.filter-search');
+                setTimeout(() => searchInput.focus(), 10);
+            }
+        });
+
+        // Search within filter options
+        group.querySelector('.filter-search').addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            const options = group.querySelectorAll('.filter-option');
+            options.forEach(option => {
+                const value = option.dataset.value.toLowerCase();
+                option.style.display = value.includes(query) ? 'flex' : 'none';
+            });
         });
 
         // Filter checkbox changes
@@ -335,9 +275,9 @@ function setupFilters() {
 }
 
 function applyFilters() {
-    const showOrcsOnly = elements.orcsToggle.checked;
+    const showOneOfOnesOnly = elements.oneOfOnesToggle.checked;
 
-    if (Object.keys(activeFilters).length === 0 && !showOrcsOnly) {
+    if (Object.keys(activeFilters).length === 0 && !showOneOfOnesOnly) {
         filteredNFTs = [...allNFTs];
     } else {
         filteredNFTs = allNFTs.filter(nft => {
@@ -347,13 +287,11 @@ function applyFilters() {
                     values.includes(nft.traits[type])
                 );
 
-            // Check Orcs filter - look for "Orc" in any trait value
-            const isOrc = !showOrcsOnly ||
-                Object.values(nft.traits).some(value =>
-                    value.toLowerCase().includes('orc')
-                );
+            // Check 1/1 filter - the "1/1" trait should NOT be "None"
+            const isOneOfOne = !showOneOfOnesOnly ||
+                (nft.traits['1/1'] && nft.traits['1/1'].toLowerCase() !== 'none');
 
-            return matchesTraits && isOrc;
+            return matchesTraits && isOneOfOne;
         });
     }
 
@@ -363,6 +301,11 @@ function applyFilters() {
 
 function renderActiveFilters() {
     elements.activeFilters.innerHTML = '';
+
+    if (Object.keys(activeFilters).length === 0) {
+        elements.activeFilters.innerHTML = '<span class="no-filters">None</span>';
+        return;
+    }
 
     Object.entries(activeFilters).forEach(([type, values]) => {
         values.forEach(value => {
@@ -396,7 +339,7 @@ function renderActiveFilters() {
 
 function clearFilters() {
     activeFilters = {};
-    elements.orcsToggle.checked = false;
+    elements.oneOfOnesToggle.checked = false;
     document.querySelectorAll('.filter-groups .filter-checkbox').forEach(cb => cb.checked = false);
     applyFilters();
 }
@@ -433,12 +376,22 @@ function applySort() {
 // ============================================
 // NFT RENDERING
 // ============================================
-function renderNFTs() {
-    elements.nftGrid.innerHTML = '';
+function renderNFTs(reset = true) {
+    if (reset) {
+        elements.nftGrid.innerHTML = '';
+        currentPage = 0;
+    }
 
-    filteredNFTs.forEach(nft => {
+    const start = currentPage * ITEMS_PER_PAGE;
+    const end = start + ITEMS_PER_PAGE;
+    const nftsToRender = filteredNFTs.slice(start, end);
+
+    nftsToRender.forEach(nft => {
         const card = document.createElement('div');
         card.className = 'nft-card';
+
+        const inner = document.createElement('div');
+        inner.className = 'nft-card-inner';
 
         const img = document.createElement('img');
         img.className = 'nft-image loading';
@@ -448,20 +401,50 @@ function renderNFTs() {
             img.classList.remove('loading');
             img.classList.add('loaded');
         };
-        img.src = nft.imageUrl;
+        // If a thumbnail fails: R2 thumb -> Helius resize -> full image, each tried once
+        const fallbacks = [nft.thumbnailFallback, nft.imageUrl].filter(Boolean);
+        img.onerror = () => {
+            const next = fallbacks.shift();
+            if (next) img.src = next;
+        };
+        // Use pre-cached CDN thumbnail for fast loading
+        img.src = nft.thumbnailUrl;
 
         const info = document.createElement('div');
         info.className = 'nft-info';
         info.innerHTML = `<div class="nft-name">${nft.name}</div>`;
 
-        card.appendChild(img);
-        card.appendChild(info);
+        inner.appendChild(img);
+        inner.appendChild(info);
+        card.appendChild(inner);
 
         card.addEventListener('click', () => showDetails(nft));
 
         elements.nftGrid.appendChild(card);
     });
+
+    currentPage++;
+    isLoadingMore = false;
 }
+
+function loadMoreIfNeeded() {
+    if (isLoadingMore) return;
+    
+    const scrollY = window.scrollY + window.innerHeight;
+    const pageHeight = document.documentElement.scrollHeight;
+    
+    // Load more when user is within 500px of bottom
+    if (scrollY >= pageHeight - 500) {
+        const totalLoaded = currentPage * ITEMS_PER_PAGE;
+        if (totalLoaded < filteredNFTs.length) {
+            isLoadingMore = true;
+            renderNFTs(false);
+        }
+    }
+}
+
+// Infinite scroll listener
+window.addEventListener('scroll', loadMoreIfNeeded);
 
 // ============================================
 // NFT DETAILS
@@ -477,7 +460,41 @@ function showDetails(nft) {
             </div>
         `).join('');
     elements.detailsMint.textContent = nft.mint;
+    elements.downloadBtn.onclick = () => downloadFullImage(nft);
+    elements.downloadBtn.textContent = 'Download full size';
+    elements.downloadBtn.disabled = !nft.imageUrl;
     elements.detailsModal.style.display = 'flex';
+}
+
+// Downloads the original full-resolution image (not the resized tile).
+// Fetch as a blob so the browser saves it with a proper name instead of navigating
+// (the download attribute is ignored for cross-origin links like arweave.net).
+async function downloadFullImage(nft) {
+    const btn = elements.downloadBtn;
+    if (!nft.imageUrl || btn.disabled) return;
+    btn.disabled = true;
+    btn.textContent = 'Downloading…';
+    try {
+        const response = await fetch(nft.imageUrl);
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const blob = await response.blob();
+        const ext = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/gif': 'gif', 'image/webp': 'webp' }[blob.type] || 'png';
+        const fileName = `${nft.name.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '')}.${ext}`;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+        btn.textContent = 'Download full size';
+    } catch (err) {
+        // Fallback: open the original in a new tab so it can be saved manually
+        window.open(nft.imageUrl, '_blank', 'noopener');
+        btn.textContent = 'Download full size';
+    }
+    btn.disabled = false;
 }
 
 function closeDetails() {

@@ -1,13 +1,26 @@
-// Simple local development server
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
+// Local dev server: serves the static site and runs the same /api/helius handler Vercel uses.
+// Key comes from HELIUS_API_KEY or .env.local (gitignored). Never hardcode it here.
+import http from 'node:http';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import heliusHandler from './api/helius.js';
+import collectionHandler from './api/collection.js';
 
-const PORT = 3000;
-const HELIUS_API_KEY = process.env.HELIUS_API_KEY || 'fae97e4f-e2de-46d7-828f-9e18aec8e579';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const PORT = Number(process.env.PORT) || 3000;
+
+// Load .env.local if present (no dependency needed)
+const envFile = path.join(__dirname, '.env.local');
+if (fs.existsSync(envFile)) {
+    for (const line of fs.readFileSync(envFile, 'utf8').split(/\r?\n/)) {
+        const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
+        if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^["']|["']$/g, '');
+    }
+}
 
 const mimeTypes = {
-    '.html': 'text/html',
+    '.html': 'text/html; charset=utf-8',
     '.css': 'text/css',
     '.js': 'application/javascript',
     '.jpg': 'image/jpeg',
@@ -15,61 +28,63 @@ const mimeTypes = {
     '.json': 'application/json'
 };
 
-const server = http.createServer(async (req, res) => {
-    // Handle API requests
-    if (req.url === '/api/helius' && req.method === 'POST') {
-        let body = '';
-        req.on('data', chunk => body += chunk);
-        req.on('end', async () => {
-            try {
-                const { collection, page = 1 } = JSON.parse(body);
+// Minimal shim so the Vercel-style handler (req.body, res.status().json()) runs under node:http
+function vercelRes(res) {
+    res.status = (code) => { res.statusCode = code; return res; };
+    res.json = (obj) => {
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify(obj));
+        return res;
+    };
+    res.send = (body) => { res.end(body); return res; };
+    return res;
+}
 
-                const response = await fetch(`https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        jsonrpc: '2.0',
-                        id: 'midevil-viewer',
-                        method: 'getAssetsByGroup',
-                        params: {
-                            groupKey: 'collection',
-                            groupValue: collection,
-                            page: page,
-                            limit: 1000,
-                            displayOptions: { showCollectionMetadata: true }
-                        }
-                    })
-                });
+const server = http.createServer((req, res) => {
+    const urlPath = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
 
-                const data = await response.json();
-                res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify(data.result || { items: [] }));
-            } catch (error) {
-                res.writeHead(500, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ error: error.message }));
-            }
+    if (urlPath === '/api/collection') {
+        Promise.resolve(collectionHandler(req, vercelRes(res))).catch((err) => {
+            console.error(err);
+            if (!res.headersSent) vercelRes(res).status(500).json({ error: 'Server error' });
         });
         return;
     }
 
-    // Serve static files
-    let filePath = req.url === '/' ? '/index.html' : req.url;
-    filePath = path.join(__dirname, filePath);
+    if (urlPath === '/api/helius') {
+        let body = '';
+        req.on('data', (chunk) => { body += chunk; });
+        req.on('end', async () => {
+            try {
+                req.body = body ? JSON.parse(body) : {};
+            } catch {
+                return vercelRes(res).status(400).json({ error: 'Invalid JSON' });
+            }
+            await heliusHandler(req, vercelRes(res));
+        });
+        return;
+    }
 
-    const ext = path.extname(filePath);
-    const contentType = mimeTypes[ext] || 'application/octet-stream';
+    // Static files (query strings like ?v=20260202 are ignored; no escaping the project dir)
+    const filePath = path.join(__dirname, urlPath === '/' ? 'index.html' : urlPath);
+    const rel = path.relative(__dirname, filePath);
+    if (!filePath.startsWith(__dirname + path.sep) || /(^|[\\/])\./.test(rel) || /^(api|node_modules)([\\/]|$)|^(server\.js|package\.json|vercel\.json)$/.test(rel)) {
+        res.writeHead(403);
+        return res.end('Forbidden');
+    }
 
     fs.readFile(filePath, (err, content) => {
         if (err) {
             res.writeHead(404);
             res.end('Not Found');
         } else {
-            res.writeHead(200, { 'Content-Type': contentType });
+            res.writeHead(200, { 'Content-Type': mimeTypes[path.extname(filePath)] || 'application/octet-stream' });
             res.end(content);
         }
     });
 });
 
 server.listen(PORT, () => {
-    console.log(`MidEvil Viewer running at http://localhost:${PORT}`);
+    console.log(`MidEvil Gallery running at http://localhost:${PORT}`);
+    if (!process.env.HELIUS_API_KEY) console.warn('WARNING: HELIUS_API_KEY not set — /api/helius will return 500');
 });

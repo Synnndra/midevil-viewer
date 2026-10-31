@@ -4,10 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MidEvil Gallery</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=MedievalSharp&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://assets.midevils.com">
+    <link rel="stylesheet" href="style.css?v=20261031">
 </head>
 <body>
     <div class="app">
@@ -15,16 +13,6 @@
         <header class="header">
             <div class="header-content">
                 <img src="MidLogo.png" alt="MidEvil" class="logo-img">
-                <div class="header-controls">
-                    <select id="sortSelect" class="header-select">
-                        <option value="number">Sort by Number</option>
-                        <option value="random">Random</option>
-                    </select>
-                    <div class="search-wrapper">
-                        <input type="text" id="searchInput" class="search-input" placeholder="Search by ID #">
-                        <button id="searchBtn" class="search-btn">Search</button>
-                    </div>
-                </div>
                 <div class="header-stats">
                     <span id="totalCount" class="stat">0 Items</span>
                 </div>
@@ -46,8 +34,8 @@
                         <span class="filter-value">Graveyard MidEvils</span>
                     </label>
                     <label class="filter-option">
-                        <input type="checkbox" id="orcsToggle" class="filter-checkbox">
-                        <span class="filter-value">Orcs Only</span>
+                        <input type="checkbox" id="oneOfOnesToggle" class="filter-checkbox">
+                        <span class="filter-value">1/1s Only</span>
                     </label>
                 </div>
 
@@ -56,6 +44,23 @@
 
             <!-- Gallery -->
             <section class="gallery-container">
+                <!-- Gallery Controls -->
+                <div class="gallery-controls">
+                    <input type="text" id="searchInput" class="search-input" placeholder="Search ID">
+                    <div class="gallery-controls-right">
+                        <select id="sortSelect" class="sort-select">
+                            <option value="random">Sort: Random</option>
+                            <option value="number">Sort: Number</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Active Filters -->
+                <div class="active-filters-row">
+                    <span class="filters-label">Filters:</span>
+                    <div id="activeFilters" class="active-filters"><span class="no-filters">None</span></div>
+                </div>
+
                 <!-- Mobile Filter Toggle -->
                 <button id="filterToggle" class="filter-toggle">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -65,9 +70,6 @@
                     </svg>
                     Filters
                 </button>
-
-                <!-- Active Filters -->
-                <div id="activeFilters" class="active-filters"></div>
 
                 <!-- Loading State -->
                 <div id="loading" class="loading">
@@ -89,12 +91,13 @@
                 <button id="closeDetails" class="close-btn modal-close">&times;</button>
                 <img id="detailsImage" src="" alt="" class="details-image">
                 <h2 id="detailsTitle" class="details-title"></h2>
+                <button id="downloadBtn" class="download-btn" type="button">Download full size</button>
                 <div id="detailsTraits" class="details-traits"></div>
                 <div id="detailsMint" class="details-mint"></div>
             </div>
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <script src="app.js?v=20261031e"></script>
 </body>
 </html>
