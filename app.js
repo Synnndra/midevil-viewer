@@ -1,5 +1,17 @@
 // MidEvil NFT Gallery
 
+// Stale-page guard: a browser holding a cached pre-10/31 index.html still loads this app.js
+// (same filename), which would crash on the missing elements. Reload once with a fresh copy.
+if (!document.getElementById('walletBtn')) {
+    try {
+        if (!sessionStorage.getItem('gallery-stale-reload')) {
+            sessionStorage.setItem('gallery-stale-reload', '1');
+            location.replace(location.pathname + '?fresh=' + Date.now());
+        }
+    } catch { /* storage blocked: fall through to the error below */ }
+    throw new Error('Old cached page detected — reloading for the current version');
+}
+
 // ============================================
 // CONFIGURATION
 // ============================================
