@@ -28,7 +28,17 @@ const elements = {
     detailsImage: document.getElementById('detailsImage'),
     detailsTraits: document.getElementById('detailsTraits'),
     detailsMint: document.getElementById('detailsMint'),
-    downloadBtn: document.getElementById('downloadBtn')
+    downloadBtn: document.getElementById('downloadBtn'),
+    walletBtn: document.getElementById('walletBtn'),
+    walletModal: document.getElementById('walletModal'),
+    closeWallet: document.getElementById('closeWallet'),
+    walletOptions: document.getElementById('walletOptions'),
+    walletStatus: document.getElementById('walletStatus'),
+    walletPaste: document.getElementById('walletPaste'),
+    walletPasteBtn: document.getElementById('walletPasteBtn'),
+    mineToggleWrap: document.getElementById('mineToggleWrap'),
+    mineToggle: document.getElementById('mineToggle'),
+    mineToggleLabel: document.getElementById('mineToggleLabel')
 };
 
 // ============================================
@@ -50,6 +60,7 @@ let isLoadingMore = false;
 elements.filterToggle.addEventListener('click', toggleSidebar);
 elements.graveyardToggle.addEventListener('change', fetchCollection);
 elements.oneOfOnesToggle.addEventListener('change', applyFilters);
+elements.mineToggle.addEventListener('change', applyFilters);
 elements.clearFilters.addEventListener('click', clearFilters);
 elements.sortSelect.addEventListener('change', applySort);
 elements.searchInput.addEventListener('keypress', e => {
@@ -103,6 +114,7 @@ async function fetchCollection() {
                 thumbnailUrl: nft.thumb,
                 thumbnailFallback: nft.thumbFallback || '',
                 traits: nft.traits || {},
+                owner: nft.owner || '',
                 mint: nft.id
             };
         });
@@ -115,7 +127,8 @@ async function fetchCollection() {
 
         elements.totalCount.textContent = `${allNFTs.length} Items`;
         setupFilters();
-        applySort();
+        updateMineCount();
+        applyFilters(); // keeps 1/1s and My MidEvils applied when switching Graveyard on/off
     } catch (err) {
         if (token !== fetchToken) return;
         showError('Failed to fetch collection: ' + err.message);
@@ -154,11 +167,8 @@ function searchById() {
     const query = elements.searchInput.value.trim();
 
     if (!query) {
-        // If search is empty, clear search and show all
-        filteredNFTs = Object.keys(activeFilters).length > 0
-            ? allNFTs.filter(nft => Object.entries(activeFilters).every(([type, values]) => values.includes(nft.traits[type])))
-            : [...allNFTs];
-        applySort();
+        // Search cleared: go back to whatever the filters show
+        applyFilters();
         return;
     }
 
@@ -274,10 +284,19 @@ function setupFilters() {
     });
 }
 
+function mineFilterOn() {
+    return elements.mineToggle.checked && myWallets.size > 0;
+}
+
+function anyFilterOn() {
+    return Object.keys(activeFilters).length > 0 || elements.oneOfOnesToggle.checked || mineFilterOn();
+}
+
 function applyFilters() {
     const showOneOfOnesOnly = elements.oneOfOnesToggle.checked;
+    const mineOnly = mineFilterOn();
 
-    if (Object.keys(activeFilters).length === 0 && !showOneOfOnesOnly) {
+    if (!anyFilterOn()) {
         filteredNFTs = [...allNFTs];
     } else {
         filteredNFTs = allNFTs.filter(nft => {
@@ -291,7 +310,9 @@ function applyFilters() {
             const isOneOfOne = !showOneOfOnesOnly ||
                 (nft.traits['1/1'] && nft.traits['1/1'].toLowerCase() !== 'none');
 
-            return matchesTraits && isOneOfOne;
+            const isMine = !mineOnly || myWallets.has(nft.owner);
+
+            return matchesTraits && isOneOfOne && isMine;
         });
     }
 
@@ -302,8 +323,19 @@ function applyFilters() {
 function renderActiveFilters() {
     elements.activeFilters.innerHTML = '';
 
+    if (mineFilterOn()) {
+        const tag = document.createElement('div');
+        tag.className = 'active-filter';
+        tag.innerHTML = '<span>My MidEvils</span><button type="button" aria-label="Remove">&times;</button>';
+        tag.querySelector('button').addEventListener('click', () => {
+            elements.mineToggle.checked = false;
+            applyFilters();
+        });
+        elements.activeFilters.appendChild(tag);
+    }
+
     if (Object.keys(activeFilters).length === 0) {
-        elements.activeFilters.innerHTML = '<span class="no-filters">None</span>';
+        if (!mineFilterOn()) elements.activeFilters.innerHTML = '<span class="no-filters">None</span>';
         return;
     }
 
@@ -340,6 +372,7 @@ function renderActiveFilters() {
 function clearFilters() {
     activeFilters = {};
     elements.oneOfOnesToggle.checked = false;
+    elements.mineToggle.checked = false;
     document.querySelectorAll('.filter-groups .filter-checkbox').forEach(cb => cb.checked = false);
     applyFilters();
 }
@@ -349,7 +382,8 @@ function clearFilters() {
 // ============================================
 function applySort() {
     const sortBy = elements.sortSelect.value;
-    const nfts = filteredNFTs.length > 0 || Object.keys(activeFilters).length > 0
+    // An empty result from active filters must stay empty (e.g. a wallet with no MidEvils)
+    const nfts = filteredNFTs.length > 0 || anyFilterOn()
         ? [...filteredNFTs]
         : [...allNFTs];
 
@@ -380,6 +414,13 @@ function renderNFTs(reset = true) {
     if (reset) {
         elements.nftGrid.innerHTML = '';
         currentPage = 0;
+        if (filteredNFTs.length === 0 && allNFTs.length > 0) {
+            const set = elements.graveyardToggle.checked ? 'Graveyard MidEvils' : 'MidEvils';
+            elements.nftGrid.innerHTML = mineFilterOn()
+                ? `<div class="no-results">No ${set} in ${myWallets.size === 1 ? 'this wallet' : 'these wallets'}${anyTraitOrOneOfOne() ? ' with these filters' : ''}</div>`
+                : '<div class="no-results">No MidEvils match these filters</div>';
+            return;
+        }
     }
 
     const start = currentPage * ITEMS_PER_PAGE;
@@ -502,6 +543,306 @@ function closeDetails() {
 }
 
 // ============================================
+// WALLET ("My MidEvils")
+// ============================================
+// Connect-only: we ask the wallet for its public address and nothing else. No signMessage,
+// no transactions, so there is nothing for Phantom to warn about. Ownership comes from the
+// collection data already loaded (owner field, refreshed every 5 minutes on the server);
+// staked MidEvils still list the holder as owner.
+const WALLET_STORE = 'midevils-gallery.wallet';
+const MAX_PASTED = 20;
+const CONNECT_SLOW_MS = 5000;   // after this, explain what to check (but keep waiting)
+const CONNECT_GIVE_UP_MS = 60000;
+
+let myWallets = new Set();
+let connected = null; // { key, name, provider, address } when connected through a wallet
+const watchedProviders = new WeakSet();
+
+const enc = encodeURIComponent;
+const WALLETS = [
+    {
+        key: 'phantom', name: 'Phantom',
+        get: () => (window.phantom?.solana?.isPhantom ? window.phantom.solana : (window.solana?.isPhantom ? window.solana : null)),
+        browse: (u) => `https://phantom.app/ul/browse/${enc(u)}?ref=${enc(u)}`,
+        install: 'https://phantom.app/download'
+    },
+    {
+        key: 'solflare', name: 'Solflare',
+        get: () => (window.solflare?.isSolflare ? window.solflare : null),
+        browse: (u) => `https://solflare.com/ul/v1/browse/${enc(u)}?ref=${enc(u)}`,
+        install: 'https://solflare.com/download'
+    },
+    {
+        key: 'backpack', name: 'Backpack',
+        get: () => (window.backpack?.solana?.connect ? window.backpack.solana : (window.backpack?.connect ? window.backpack : null)),
+        browse: null,
+        install: 'https://backpack.app/downloads'
+    }
+];
+
+function isAddress(s) {
+    return typeof s === 'string' && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(s);
+}
+
+function shortAddress(a) {
+    return `${a.slice(0, 4)}…${a.slice(-4)}`;
+}
+
+function isMobile() {
+    return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+        (navigator.maxTouchPoints > 1 && /Mac/i.test(navigator.platform || ''));
+}
+
+function anyTraitOrOneOfOne() {
+    return Object.keys(activeFilters).length > 0 || elements.oneOfOnesToggle.checked;
+}
+
+function setWalletStatus(text, isError = false) {
+    elements.walletStatus.textContent = text;
+    elements.walletStatus.classList.toggle('error', isError);
+}
+
+function saveWalletState() {
+    try {
+        if (myWallets.size === 0) localStorage.removeItem(WALLET_STORE);
+        else localStorage.setItem(WALLET_STORE, JSON.stringify({
+            wallet: connected?.key || null,
+            addresses: [...myWallets],
+            mine: elements.mineToggle.checked
+        }));
+    } catch { /* private mode etc. — just don't remember */ }
+}
+
+function loadWalletState() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(WALLET_STORE) || 'null');
+        if (saved && Array.isArray(saved.addresses)) {
+            const addresses = saved.addresses.filter(isAddress).slice(0, MAX_PASTED);
+            if (addresses.length) return { ...saved, addresses };
+        }
+    } catch { /* ignore */ }
+    return null;
+}
+
+function updateMineCount() {
+    if (myWallets.size === 0) return;
+    const count = allNFTs.filter(n => myWallets.has(n.owner)).length;
+    elements.mineToggleLabel.textContent = `${elements.graveyardToggle.checked ? 'My Graveyard' : 'My MidEvils'} (${count})`;
+}
+
+function updateWalletButton() {
+    const btn = elements.walletBtn;
+    if (myWallets.size === 0) {
+        btn.textContent = 'Connect wallet';
+        btn.classList.remove('connected');
+    } else {
+        btn.textContent = myWallets.size === 1 ? shortAddress([...myWallets][0]) : `${myWallets.size} wallets`;
+        btn.classList.add('connected');
+    }
+}
+
+// Sets which wallets count as "mine" and turns the My MidEvils filter on (or keeps the saved state)
+function setMyWallets(addresses, { showMine = true } = {}) {
+    myWallets = new Set(addresses);
+    elements.mineToggleWrap.hidden = myWallets.size === 0;
+    elements.mineToggle.checked = myWallets.size > 0 && showMine;
+    updateWalletButton();
+    updateMineCount();
+    saveWalletState();
+    if (allNFTs.length) applyFilters();
+}
+
+function disconnectWallet() {
+    const provider = connected?.provider;
+    connected = null;
+    try { provider?.disconnect?.(); } catch { /* ignore */ }
+    setMyWallets([]);
+    renderWalletOptions();
+    setWalletStatus('');
+}
+
+function watchAccount(provider) {
+    if (watchedProviders.has(provider) || typeof provider.on !== 'function') return;
+    watchedProviders.add(provider);
+    try {
+        provider.on('accountChanged', (pk) => {
+            // Phantom sends null when switching to an account this site hasn't seen; keep the old view then
+            const address = pk?.toString?.();
+            if (connected?.provider === provider && isAddress(address)) {
+                connected.address = address;
+                setMyWallets([address]);
+            }
+        });
+        provider.on('disconnect', () => {
+            if (connected?.provider === provider) disconnectWallet();
+        });
+    } catch { /* some wallets don't emit events */ }
+}
+
+function friendlyWalletError(err, name) {
+    const code = err?.code;
+    if (code === 4001) return 'Cancelled. Tap the wallet to try again.';
+    if (code === 4100) return `${name} refused the request. Close every ${name} browser tab, restart ${name}, then try again.`;
+    if (code === 'timeout') return `No answer from ${name}. Make sure it's unlocked, then try again.`;
+    return `Couldn't connect to ${name}${err?.message ? `: ${err.message}` : ''}.`;
+}
+
+async function connectWallet(wallet) {
+    const provider = wallet.get();
+    if (!provider) {
+        setWalletStatus(`${wallet.name} not found in this browser.`, true);
+        return;
+    }
+    setWalletStatus(`Approve the connection in ${wallet.name}…`);
+    let giveUpTimer;
+    const slowTimer = setTimeout(() => {
+        setWalletStatus(`Still waiting for ${wallet.name}. No popup? Unlock ${wallet.name} and check its window.`);
+    }, CONNECT_SLOW_MS);
+    try {
+        const resp = await Promise.race([
+            provider.connect(),
+            new Promise((_, reject) => { giveUpTimer = setTimeout(() => reject({ code: 'timeout' }), CONNECT_GIVE_UP_MS); })
+        ]);
+        const address = (resp?.publicKey || provider.publicKey)?.toString?.();
+        if (!isAddress(address)) throw new Error('no address returned');
+        connected = { key: wallet.key, name: wallet.name, provider, address };
+        watchAccount(provider);
+        setMyWallets([address]);
+        setWalletStatus('');
+        closeWalletModal();
+    } catch (err) {
+        setWalletStatus(friendlyWalletError(err, wallet.name), true);
+    } finally {
+        clearTimeout(slowTimer);
+        clearTimeout(giveUpTimer);
+    }
+}
+
+function usePastedAddresses() {
+    const parts = elements.walletPaste.value.split(/[\s,;]+/).filter(Boolean);
+    if (parts.length === 0) {
+        setWalletStatus('Paste at least one wallet address.', true);
+        return;
+    }
+    const bad = parts.find(p => !isAddress(p));
+    if (bad) {
+        setWalletStatus(`Not a Solana address: ${bad.slice(0, 48)}`, true);
+        return;
+    }
+    const addresses = [...new Set(parts)];
+    if (addresses.length > MAX_PASTED) {
+        setWalletStatus(`Up to ${MAX_PASTED} addresses at a time.`, true);
+        return;
+    }
+    if (connected) {
+        try { connected.provider?.disconnect?.(); } catch { /* ignore */ }
+        connected = null;
+    }
+    setMyWallets(addresses);
+    setWalletStatus('');
+    elements.walletPaste.value = '';
+    closeWalletModal();
+}
+
+function renderWalletOptions() {
+    const box = elements.walletOptions;
+    box.innerHTML = '';
+
+    if (myWallets.size > 0) {
+        const current = document.createElement('div');
+        current.className = 'wallet-current';
+        const label = connected ? `Connected with ${connected.name}` : (myWallets.size === 1 ? 'Showing wallet' : `Showing ${myWallets.size} wallets`);
+        // Addresses are validated base58, safe to put in HTML
+        current.innerHTML = `<div class="wallet-current-label">${label}</div>` +
+            [...myWallets].map(a => `<div class="wallet-current-addr">${a}</div>`).join('');
+        const off = document.createElement('button');
+        off.type = 'button';
+        off.className = 'wallet-option wallet-disconnect';
+        off.textContent = connected ? 'Disconnect' : 'Clear wallets';
+        off.addEventListener('click', disconnectWallet);
+        current.appendChild(off);
+        box.appendChild(current);
+    }
+
+    const installed = WALLETS.filter(w => w.get());
+    installed.forEach(w => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'wallet-option';
+        b.textContent = connected?.key === w.key ? `${w.name} (switch account)` : w.name;
+        b.addEventListener('click', () => connectWallet(w));
+        box.appendChild(b);
+    });
+
+    if (installed.length === 0) {
+        if (isMobile()) {
+            // Regular phone browsers have no wallet injected: open this page inside the wallet's browser
+            const here = location.href.split('#')[0];
+            WALLETS.filter(w => w.browse).forEach(w => {
+                const a = document.createElement('a');
+                a.className = 'wallet-option';
+                a.href = w.browse(here);
+                a.textContent = `Open in ${w.name}`;
+                box.appendChild(a);
+            });
+        } else {
+            const p = document.createElement('p');
+            p.className = 'wallet-none';
+            p.innerHTML = 'No wallet extension found. Get ' +
+                WALLETS.map(w => `<a href="${w.install}" target="_blank" rel="noopener">${w.name}</a>`).join(', ') +
+                ', or paste an address below.';
+            box.appendChild(p);
+        }
+    }
+}
+
+function openWalletModal() {
+    setWalletStatus('');
+    renderWalletOptions();
+    elements.walletModal.style.display = 'flex';
+}
+
+function closeWalletModal() {
+    elements.walletModal.style.display = 'none';
+}
+
+elements.walletBtn.addEventListener('click', openWalletModal);
+elements.closeWallet.addEventListener('click', closeWalletModal);
+elements.walletPasteBtn.addEventListener('click', usePastedAddresses);
+elements.walletModal.addEventListener('click', (e) => {
+    if (e.target === elements.walletModal) closeWalletModal();
+});
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && elements.walletModal.style.display !== 'none') closeWalletModal();
+});
+elements.mineToggle.addEventListener('change', saveWalletState);
+
+// Returning visitor: show their saved wallets right away (public data, no wallet needed), then
+// quietly re-attach Phantom only if it already trusts this site (no popup otherwise).
+function restoreWallet() {
+    const saved = loadWalletState();
+    if (!saved) return;
+    setMyWallets(saved.addresses, { showMine: saved.mine !== false });
+    if (saved.wallet !== 'phantom' || saved.addresses.length !== 1) return;
+    // Wallets can inject late; wait a moment before looking
+    setTimeout(async () => {
+        const wallet = WALLETS.find(w => w.key === 'phantom');
+        const provider = wallet.get();
+        if (!provider) return;
+        try {
+            const resp = await provider.connect({ onlyIfTrusted: true });
+            const address = (resp?.publicKey || provider.publicKey)?.toString?.();
+            if (!isAddress(address)) return;
+            connected = { key: wallet.key, name: wallet.name, provider, address };
+            watchAccount(provider);
+            if (!myWallets.has(address) || myWallets.size !== 1) setMyWallets([address], { showMine: elements.mineToggle.checked });
+            else saveWalletState();
+        } catch { /* not trusted any more: keep showing the saved address */ }
+    }, 800);
+}
+
+// ============================================
 // INITIALIZE
 // ============================================
+restoreWallet();
 fetchCollection();

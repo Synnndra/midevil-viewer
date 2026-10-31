@@ -63,7 +63,8 @@ function slim(nft, set) {
     for (const a of nft.content?.metadata?.attributes || []) {
         if (a.trait_type && a.value) traits[a.trait_type] = a.value;
     }
-    return { id: nft.id, name: nft.content?.metadata?.name || '', image, thumb, thumbFallback, traits };
+    // owner = holder wallet (staked/frozen MidEvils still list the holder as owner) — used by "My MidEvils"
+    return { id: nft.id, name: nft.content?.metadata?.name || '', image, thumb, thumbFallback, traits, owner: nft.ownership?.owner || '' };
 }
 
 async function build(apiKey, set) {

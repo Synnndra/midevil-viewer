@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MidEvil Gallery</title>
     <link rel="preconnect" href="https://assets.midevils.com">
-    <link rel="stylesheet" href="style.css?v=20261031">
+    <link rel="stylesheet" href="style.css?v=20261031w">
 </head>
 <body>
     <div class="app">
@@ -15,6 +15,7 @@
                 <img src="MidLogo.png" alt="MidEvil" class="logo-img">
                 <div class="header-stats">
                     <span id="totalCount" class="stat">0 Items</span>
+                    <button id="walletBtn" class="wallet-btn" type="button">Connect wallet</button>
                 </div>
             </div>
         </header>
@@ -36,6 +37,10 @@
                     <label class="filter-option">
                         <input type="checkbox" id="oneOfOnesToggle" class="filter-checkbox">
                         <span class="filter-value">1/1s Only</span>
+                    </label>
+                    <label class="filter-option" id="mineToggleWrap" hidden>
+                        <input type="checkbox" id="mineToggle" class="filter-checkbox">
+                        <span class="filter-value" id="mineToggleLabel">My MidEvils</span>
                     </label>
                 </div>
 
@@ -96,8 +101,22 @@
                 <div id="detailsMint" class="details-mint"></div>
             </div>
         </div>
+
+        <!-- Wallet Modal: connect only. The site never asks the wallet to sign anything. -->
+        <div id="walletModal" class="modal" style="display: none;">
+            <div class="modal-content wallet-modal" role="dialog" aria-labelledby="walletModalTitle">
+                <button id="closeWallet" class="close-btn modal-close" type="button" aria-label="Close">&times;</button>
+                <h2 id="walletModalTitle" class="wallet-title">See your MidEvils</h2>
+                <p class="wallet-note">Connecting only shares your public address. Nothing to sign, no transactions.</p>
+                <div id="walletOptions" class="wallet-options"></div>
+                <p id="walletStatus" class="wallet-status" role="status"></p>
+                <div class="wallet-divider"><span>or paste wallet addresses</span></div>
+                <textarea id="walletPaste" class="wallet-paste" rows="3" placeholder="One or more addresses, separated by spaces, commas or new lines" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
+                <button id="walletPasteBtn" class="download-btn" type="button">Show MidEvils</button>
+            </div>
+        </div>
     </div>
 
-    <script src="app.js?v=20261031e"></script>
+    <script src="app.js?v=20261031w"></script>
 </body>
 </html>
