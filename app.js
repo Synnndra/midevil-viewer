@@ -561,19 +561,19 @@ const watchedProviders = new WeakSet();
 const enc = encodeURIComponent;
 const WALLETS = [
     {
-        key: 'phantom', name: 'Phantom',
+        key: 'phantom', name: 'Phantom', icon: 'wallets/phantom.webp',
         get: () => (window.phantom?.solana?.isPhantom ? window.phantom.solana : (window.solana?.isPhantom ? window.solana : null)),
         browse: (u) => `https://phantom.app/ul/browse/${enc(u)}?ref=${enc(u)}`,
         install: 'https://phantom.app/download'
     },
     {
-        key: 'solflare', name: 'Solflare',
+        key: 'solflare', name: 'Solflare', icon: 'wallets/solflare.webp',
         get: () => (window.solflare?.isSolflare ? window.solflare : null),
         browse: (u) => `https://solflare.com/ul/v1/browse/${enc(u)}?ref=${enc(u)}`,
         install: 'https://solflare.com/download'
     },
     {
-        key: 'backpack', name: 'Backpack',
+        key: 'backpack', name: 'Backpack', icon: 'wallets/backpack.webp',
         get: () => (window.backpack?.solana?.connect ? window.backpack.solana : (window.backpack?.connect ? window.backpack : null)),
         browse: null,
         install: 'https://backpack.app/downloads'
@@ -744,6 +744,19 @@ function usePastedAddresses() {
     closeWalletModal();
 }
 
+// Wallet logo + label inside a wallet button/link
+function walletLabel(el, wallet, text) {
+    const img = document.createElement('img');
+    img.className = 'wallet-icon';
+    img.src = wallet.icon;
+    img.alt = '';
+    img.width = 24;
+    img.height = 24;
+    const span = document.createElement('span');
+    span.textContent = text;
+    el.replaceChildren(img, span);
+}
+
 function renderWalletOptions() {
     const box = elements.walletOptions;
     box.innerHTML = '';
@@ -769,7 +782,7 @@ function renderWalletOptions() {
         const b = document.createElement('button');
         b.type = 'button';
         b.className = 'wallet-option';
-        b.textContent = connected?.key === w.key ? `${w.name} (switch account)` : w.name;
+        walletLabel(b, w, connected?.key === w.key ? `${w.name} (switch account)` : w.name);
         b.addEventListener('click', () => connectWallet(w));
         box.appendChild(b);
     });
@@ -782,7 +795,7 @@ function renderWalletOptions() {
                 const a = document.createElement('a');
                 a.className = 'wallet-option';
                 a.href = w.browse(here);
-                a.textContent = `Open in ${w.name}`;
+                walletLabel(a, w, `Open in ${w.name}`);
                 box.appendChild(a);
             });
         } else {

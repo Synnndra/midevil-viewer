@@ -25,6 +25,7 @@ const mimeTypes = {
     '.js': 'application/javascript',
     '.jpg': 'image/jpeg',
     '.png': 'image/png',
+    '.webp': 'image/webp',
     '.json': 'application/json'
 };
 

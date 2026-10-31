@@ -22,6 +22,10 @@
       "use": "@vercel/static"
     },
     {
+      "src": "wallets/*.webp",
+      "use": "@vercel/static"
+    },
+    {
       "src": "app.js",
       "use": "@vercel/static"
     }

@@ -752,6 +752,18 @@ body {
     cursor: pointer;
 }
 
+.wallet-option {
+    gap: 10px;
+}
+
+.wallet-icon {
+    width: 24px;
+    height: 24px;
+    flex: 0 0 24px;
+    object-fit: contain;
+    border-radius: 6px;
+}
+
 .wallet-option:hover {
     background: var(--bg-hover);
     border-color: var(--border-hover);
