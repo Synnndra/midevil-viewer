@@ -67,7 +67,7 @@ const server = http.createServer((req, res) => {
     }
 
     // Static files (query strings like ?v=20260202 are ignored; no escaping the project dir)
-    const filePath = path.join(__dirname, urlPath === '/' ? 'index.html' : urlPath);
+    const filePath = path.join(__dirname, urlPath.endsWith('/') ? urlPath + 'index.html' : urlPath);
     const rel = path.relative(__dirname, filePath);
     if (!filePath.startsWith(__dirname + path.sep) || /(^|[\\/])\./.test(rel) || /^(api|node_modules)([\\/]|$)|^(server\.js|package\.json|vercel\.json)$/.test(rel)) {
         res.writeHead(403);

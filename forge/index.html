@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>MidEvils Character Forge</title>
+<meta name="description" content="Build your own MidEvil from the original trait layers. Beasts only wear what was drawn for them.">
+<meta name="theme-color" content="#1a1a1a">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MidEvils">
+<meta property="og:title" content="MidEvils Character Forge">
+<meta property="og:description" content="Build your own MidEvil from the original trait layers.">
+<meta property="og:url" content="https://gallery.midevils.com/forge/">
+<meta property="og:image" content="https://gallery.midevils.com/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://gallery.midevils.com/og.jpg">
+<style>
+/* Same look as the gallery (style.css): dark cards on the brown-to-violet gradient, GT Pressura Mono, blue accent. */
+:root{
+  --bg-primary:#1a1a1a;--bg-secondary:#242424;--bg-card:#2a2a2a;--bg-hover:#333;
+  --border:#3a3a3a;--border-hover:#4a4a4a;
+  --text-primary:#fff;--text-secondary:#888;--text-dim:#666;
+  --accent:#3898FF;--accent-hover:#2d7acc;--success:#22c55e;--warn:#f5b84a;
+  --radius:12px;--radius-sm:8px;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+body{font-family:'GT Pressura Mono',monospace;color:var(--text-primary);line-height:1.5;min-height:100vh;
+  background-color:#4505DA;background-image:linear-gradient(180deg,#32210A 0%,#4505DA 100vh);background-repeat:no-repeat}
+a{color:var(--accent)}
+/* Header (matches the gallery) */
+.header{position:sticky;top:0;z-index:100;background:rgba(0,0,0,.4);border-bottom:1px solid var(--border);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  padding-top:env(safe-area-inset-top,0px)}
+.header-content{max-width:1800px;margin:0 auto;padding:20px max(30px,env(safe-area-inset-right,0px)) 20px max(30px,env(safe-area-inset-left,0px));
+  display:flex;justify-content:space-between;align-items:center;gap:12px}
+.logo-img{height:80px;width:auto;display:block}
+.nav{display:flex;align-items:center;gap:8px}
+.nav-link{display:inline-flex;align-items:center;min-height:44px;padding:10px 16px;border-radius:var(--radius-sm);font-size:.85rem;font-weight:600;
+  text-decoration:none;white-space:nowrap;color:#fff;background:var(--bg-card);border:1px solid var(--border-hover)}
+.nav-link:hover{background:var(--bg-hover)}
+.nav-link[aria-current="page"]{background:var(--accent);border-color:var(--accent)}
+/* Page */
+.wrap{max-width:1800px;margin:0 auto;padding:24px max(24px,env(safe-area-inset-right,0px)) 40px max(24px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:20px}
+.intro h1{font-size:1.4rem;font-weight:600;text-wrap:balance}
+.intro p{color:var(--text-secondary);font-size:.9rem;max-width:70ch}
+.grid{display:grid;grid-template-columns:minmax(0,1fr);gap:20px}
+@media (min-width:900px){.grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}
+  .stage{position:sticky;top:calc(140px + env(safe-area-inset-top,0px))}}
+@media (min-width:1400px){.grid{grid-template-columns:minmax(0,620px) minmax(0,1fr)}}
+.wrap>*,.sec,#cats{min-width:0}
+.stage{display:flex;flex-direction:column;gap:12px;min-width:0}
+/* Portrait = an NFT card from the gallery grid */
+.frame{position:relative;width:100%;max-width:100%;aspect-ratio:1/1;border:2px solid #000;background:var(--bg-hover);overflow:hidden}
+.frame canvas,.frame img{width:100%;height:100%;display:block}
+.frame img{position:absolute;inset:0}
+.busy{position:absolute;right:10px;bottom:10px;font-size:.75rem;background:rgba(0,0,0,.7);color:#fff;padding:3px 8px;border-radius:6px}
+.caption{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 12px;padding:10px 12px;border:2px solid #000;border-top:0;margin-top:-12px}
+.caption b{font-size:1rem;font-weight:600}
+.real{color:var(--success);font-size:.85rem;font-weight:600}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.actions button{flex:1 1 auto}
+button{font-family:inherit;font-size:.9rem;font-weight:600;cursor:pointer;min-height:44px;padding:10px 16px;border-radius:var(--radius-sm);
+  color:var(--text-primary);background:var(--bg-card);border:1px solid var(--border)}
+button:hover{background:var(--bg-hover);border-color:var(--border-hover)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button.primary:hover{background:var(--accent-hover)}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.hint{color:var(--text-secondary);font-size:.8rem}
+/* Trait rack = the gallery sidebar */
+.rack{background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:var(--radius);padding:20px;display:flex;flex-direction:column;gap:18px;min-width:0}
+#cats{display:flex;flex-direction:column;gap:18px}
+.sec{display:flex;flex-direction:column;gap:8px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+#cats .sec:last-child{border-bottom:none;padding-bottom:0}
+.sec-h{display:flex;align-items:center;gap:8px}
+.lab{font-size:.8rem;font-weight:500;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.05em;flex:1}
+.count{font-size:.8rem;color:var(--accent);font-variant-numeric:tabular-nums}
+.lock{min-height:32px;padding:4px 10px;font-size:.75rem}
+.lock[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+select{width:100%;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);
+  font-family:inherit;font-size:16px;min-height:46px;cursor:pointer;max-width:100%;min-width:0;text-overflow:ellipsis}
+select:hover{border-color:var(--border-hover)}
+.skins{display:flex;flex-direction:column;gap:8px}
+.skin-row{display:flex;flex-wrap:wrap;gap:6px}
+.sub{font-size:.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em}
+.chip{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:4px 12px 4px 4px;font-size:.85rem;background:var(--bg-secondary)}
+.chip .face{width:34px;height:34px;overflow:hidden;background:var(--bg-hover);border-radius:6px;flex:none}
+.chip .face img{width:80px;height:80px;max-width:none;margin:-9px 0 0 -23px;display:block}
+.chip[aria-pressed="true"]{border:1px solid transparent;background:linear-gradient(var(--bg-card),var(--bg-card)) padding-box,linear-gradient(135deg,#F89CFF 0%,#67E6F8 100%) border-box}
+.note{font-size:.85rem;color:var(--warn)}
+.lookup{display:flex;gap:8px}
+.lookup input{flex:1;min-width:0;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:#fff;
+  font-family:inherit;font-size:16px;min-height:46px}
+.lookup input::placeholder{color:var(--text-dim)}
+footer{color:var(--text-secondary);font-size:.8rem;max-width:70ch}
+@media (max-width:640px){
+  .header-content{padding:12px max(16px,env(safe-area-inset-right,0px)) 12px max(16px,env(safe-area-inset-left,0px))}
+  .logo-img{height:56px}
+  .nav-link{padding:10px 12px}
+  .wrap{padding:16px max(16px,env(safe-area-inset-right,0px)) 32px max(16px,env(safe-area-inset-left,0px))}
+  .rack{padding:16px}
+}
+@media (prefers-reduced-motion:no-preference){.frame canvas{transition:opacity .15s}}
+</style>
+</head>
+<body>
+<header class="header">
+  <div class="header-content">
+    <a href="/" aria-label="MidEvils Gallery"><img src="/MidLogo.png" alt="MidEvil" class="logo-img"></a>
+    <nav class="nav" aria-label="Site">
+      <a class="nav-link" href="/">Gallery</a>
+      <a class="nav-link" href="/forge/" aria-current="page">Forge</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="intro">
+    <h1>Character Forge</h1>
+    <p>Build a MidEvil from the original trait layers. They're only half evil.</p>
+  </div>
+
+  <div class="grid">
+    <section class="stage" aria-label="Portrait">
+      <div class="frame"><canvas id="cv" width="1024" height="1024" aria-label="Your MidEvil"></canvas><img id="shot" alt="Your MidEvil, press and hold to save" hidden><span class="busy" id="busy" hidden>loading</span></div>
+      <div class="caption"><b id="title">Loading the armory</b><span id="realhit" class="real"></span></div>
+      <div class="actions">
+        <button class="primary" id="roll">Roll a MidEvil</button>
+        <button id="save">Save PNG</button>
+        <button id="clear">Strip to skin</button>
+      </div>
+      <p class="hint" id="savehint">Roll keeps locked traits. Common traits come up more often, the same as on the real collection.</p>
+    </section>
+
+    <section class="rack" aria-label="Traits">
+      <div class="sec">
+        <div class="sec-h"><span class="lab">Load a real MidEvil</span></div>
+        <form class="lookup" id="lookup"><input id="num" inputmode="numeric" placeholder="e.g. 2526" aria-label="MidEvil number"><button type="submit">Load</button></form>
+        <p class="note" id="lookmsg" hidden></p>
+      </div>
+      <div class="sec">
+        <div class="sec-h"><span class="lab">Skin</span><button class="lock" id="lock-Skin" aria-pressed="false">Lock</button></div>
+        <div class="skins" id="skins"></div>
+        <p class="note" id="skinnote" hidden></p>
+      </div>
+      <div id="cats"></div>
+    </section>
+  </div>
+
+  <footer>Every layer is the artists' own art from the MidEvils Traits &amp; Rarity board. Beasts only get traits that were drawn for that beast, so a Tiger can't wear something that only fits a human head. Counts show how many live MidEvils carry the trait.</footer>
+</main>
+
+
+<script src="data.js"></script>
+<script>
+(()=>{
+const D=window.MIDEVILS_DATA;
+const CATS=["Background","Clothing","Eyewear","Headwear","Mouth","Specialty"];
+const BEASTS=["Eagle","Wolf","Tiger","Gorilla","Creature","Dragon"];
+const S={Background:"Tan",Skin:"Sand",Clothing:"Letterman",Eyewear:"None",Headwear:"Burnt Tips",Mouth:"None",Specialty:"None"};
+const locks={};const imgs={};
+const $=id=>document.getElementById(id);
+const grp=s=>D.skins[s]?.group||"Human";
+const opts=(cat,g)=>cat==="Background"?D.backgrounds:(D.groups[g]?.[cat]||{});
+const fileOf=(cat,v,g)=>cat==="Skin"?D.skins[v]?.file:cat==="Background"?D.backgrounds[v]?.file:opts(cat,g)[v]?.file;
+function load(f){if(!imgs[f])imgs[f]=new Promise((ok,no)=>{const i=new Image();i.decoding="async";i.onload=()=>ok(i);i.onerror=no;i.src="layers/"+f});return imgs[f]}
+// skin chips
+function buildSkins(){
+  const hum=Object.keys(D.skins).filter(s=>grp(s)==="Human").sort();
+  const box=$("skins");box.innerHTML="";
+  [["Humans",hum],["Beasts",BEASTS]].forEach(([t,list])=>{
+    const h=document.createElement("div");h.className="sub";h.textContent=t;box.appendChild(h);
+    const row=document.createElement("div");row.className="skin-row";
+    list.forEach(s=>{const b=document.createElement("button");b.className="chip";b.dataset.skin=s;b.setAttribute("aria-pressed","false");
+      b.innerHTML=`<span class="face"><img alt="" loading="lazy" src="layers/${D.heads?.[s]||D.skins[s].file}"></span><span>${s}</span>`;b.onclick=()=>setSkin(s,true);row.appendChild(b)});
+    box.appendChild(row)});
+}
+function buildCats(){
+  const box=$("cats");box.innerHTML="";
+  CATS.forEach(c=>{
+    const sec=document.createElement("div");sec.className="sec";
+    sec.innerHTML=`<div class="sec-h"><label class="lab" for="sel-${c}">${c}</label><span class="count" id="cnt-${c}"></span><button class="lock" id="lock-${c}" aria-pressed="false">Lock</button></div><select id="sel-${c}"></select>`;
+    box.appendChild(sec);
+    sec.querySelector("select").onchange=e=>{S[c]=e.target.value;render()};
+  });
+  ["Skin",...CATS].forEach(c=>{const b=$("lock-"+c);b.onclick=()=>{locks[c]=!locks[c];b.setAttribute("aria-pressed",locks[c]?"true":"false");b.textContent=locks[c]?"Locked":"Lock"}});
+}
+function fillSelects(){
+  const g=grp(S.Skin);
+  CATS.forEach(c=>{
+    const sel=$("sel-"+c),o=opts(c,g);const names=Object.keys(o).sort();
+    sel.innerHTML=(c==="Background"?"":`<option value="None">None</option>`)+names.map(n=>`<option value="${n}">${n}  (${o[n].count})</option>`).join("");
+    sel.value=S[c];
+    if(sel.value!==S[c]){S[c]=c==="Background"?names[0]:"None";sel.value=S[c]}
+    const n=S[c]==="None"?(D.groups[g]?.[c+"__none"]??""):o[S[c]]?.count;
+    $("cnt-"+c).textContent=n!==undefined&&n!==""?`${n} on-chain`:"";
+  });
+  document.querySelectorAll(".chip").forEach(b=>b.setAttribute("aria-pressed",b.dataset.skin===S.Skin?"true":"false"));
+}
+function setSkin(s,user){
+  const dropped=[];S.Skin=s;const g=grp(s);
+  CATS.forEach(c=>{if(c!=="Background"&&S[c]!=="None"&&!opts(c,g)[S[c]]){dropped.push(`${S[c]}`);S[c]="None"}});
+  const n=$("skinnote");
+  if(user&&dropped.length){n.textContent=`${dropped.join(", ")} ${dropped.length>1?"weren't":"wasn't"} drawn for ${g==="Human"?"humans":g+"s"}, so ${dropped.length>1?"they were":"it was"} taken off.`;n.hidden=false}else n.hidden=true;
+  render();
+}
+function pickWeighted(entries){let t=0;for(const [,w] of entries)t+=w;let r=Math.random()*t;for(const [k,w] of entries){if((r-=w)<=0)return k}return entries[entries.length-1][0]}
+// a skin can take every locked trait (locked None always fits)
+const fits=s=>CATS.every(c=>c==="Background"||!locks[c]||S[c]==="None"||opts(c,grp(s))[S[c]]);
+function roll(){
+  if(!locks.Skin){const ok=Object.entries(D.skins).filter(([k])=>fits(k)).map(([k,v])=>[k,v.count]);
+    if(ok.length)S.Skin=pickWeighted(ok)}
+  const g=grp(S.Skin);
+  CATS.forEach(c=>{
+    if(locks[c]&&(c==="Background"||S[c]==="None"||opts(c,g)[S[c]]))return;
+    const o=opts(c,g);const e=Object.entries(o).map(([k,v])=>[k,v.count]);
+    if(c!=="Background")e.push(["None",D.groups[g]?.[c+"__none"]||0]);
+    S[c]=pickWeighted(e);
+  });
+  const n=$("skinnote");
+  if(!fits(S.Skin)){n.textContent="No skin can wear all the locked traits together, so some were re-rolled.";n.hidden=false}else n.hidden=true;
+  render();
+}
+function realMatch(){
+  for(const [n,t] of Object.entries(D.real)){if(t.Skin===S.Skin&&CATS.every(c=>t[c]===S[c]))return n}return null;
+}
+let ticket=0,drawn=0,current=Promise.resolve();
+function render(){current=draw();return current}
+async function draw(){
+  fillSelects();const my=++ticket;const g=grp(S.Skin);
+  const top=D.headwearOverEyewear.includes(S.Headwear)?["Specialty","Eyewear","Headwear"]:["Headwear","Specialty","Eyewear"];
+  const order=["Background","Skin","Clothing","Head","Mouth",...top];
+  // beast heads are their own layer, drawn over the clothing so hoods and collars sit behind the fur
+  const files=order.map(c=>c==="Head"?D.heads?.[g]:S[c]&&S[c]!=="None"?fileOf(c,S[c],g):null).filter(Boolean);
+  $("busy").hidden=false;$("shot").hidden=true;
+  try{
+    const layers=await Promise.all(files.map(load));if(my!==ticket)return;
+    const cv=$("cv"),x=cv.getContext("2d");x.clearRect(0,0,cv.width,cv.height);
+    layers.forEach(i=>x.drawImage(i,0,0,cv.width,cv.height));drawn=my;
+  }catch(e){if(my!==ticket)return;$("title").textContent="A layer failed to load. Reload the page to try again.";$("busy").hidden=true;return}
+  $("busy").hidden=true;
+  const bits=[S.Clothing,S.Headwear,S.Eyewear,S.Mouth,S.Specialty].filter(v=>v&&v!=="None");
+  $("title").textContent=`${S.Skin} MidEvil`;
+  const m=realMatch();$("realhit").textContent=m?`Same traits as MidEvil #${m}`:(bits.length?"A combination nobody holds":"");
+}
+$("roll").onclick=roll;
+$("clear").onclick=()=>{CATS.forEach(c=>{if(c!=="Background"&&!locks[c])S[c]="None"});render()};
+$("save").onclick=async()=>{
+  // wait for whatever render is in flight, so the file is the character on screen
+  let t;do{t=ticket;await current}while(t!==ticket);
+  if(drawn!==ticket){$("savehint").textContent="That character didn't finish drawing, so nothing was saved.";return}
+  const cv=$("cv");let url;
+  try{url=cv.toDataURL("image/png")}catch(e){$("savehint").textContent="This browser blocked saving, so nothing was saved.";return}
+  const a=document.createElement("a");a.href=url;a.download=`midevil-${S.Skin}-${Date.now()}.png`.replace(/\s+/g,"-").toLowerCase();document.body.appendChild(a);a.click();a.remove();
+  const shot=$("shot");shot.src=url;shot.hidden=false;
+  $("savehint").textContent="If no download started, press and hold (or right-click) the portrait and choose Save image.";
+};
+$("lookup").addEventListener("submit",e=>{e.preventDefault();
+  const n=$("num").value.trim().replace(/^#/,"");const t=/^\d+$/.test(n)&&Object.hasOwn(D.real,n)?D.real[n]:null;const msg=$("lookmsg");
+  if(!t){msg.textContent=`MidEvil #${n} isn't a live, non-1/1 MidEvil OG, so there are no layers to load for it.`;msg.hidden=false;return}
+  Object.assign(S,t);const g=grp(S.Skin);const gone=[];
+  CATS.forEach(c=>{if(c!=="Background"&&S[c]!=="None"&&!opts(c,g)[S[c]]){gone.push(S[c]);S[c]="None"}});
+  if(gone.length){msg.textContent=`MidEvil #${n} wears ${gone.join(" and ")}, but the artists' board has no ${g} version of ${gone.length>1?"those":"it"}, so ${gone.length>1?"they're":"it's"} left off.`;msg.hidden=false}else msg.hidden=true;
+  $("skinnote").hidden=true;render();
+});
+buildSkins();buildCats();render();
+})();
+</script>
+</body>
+</html>

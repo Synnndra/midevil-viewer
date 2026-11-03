@@ -28,6 +28,18 @@
     {
       "src": "app.js",
       "use": "@vercel/static"
+    },
+    {
+      "src": "forge/*.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "forge/*.js",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "forge/layers/*.webp",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
@@ -38,6 +50,17 @@
     {
       "src": "/api/collection",
       "dest": "/api/collection.js"
+    },
+    {
+      "src": "/forge",
+      "status": 308,
+      "headers": {
+        "Location": "/forge/"
+      }
+    },
+    {
+      "src": "/forge/",
+      "dest": "/forge/index.html"
     },
     {
       "src": "/(.*)",
