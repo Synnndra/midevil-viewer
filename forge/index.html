@@ -78,6 +78,12 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .sec-h{display:flex;align-items:center;gap:8px}
 .lab{font-size:.8rem;font-weight:500;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.05em;flex:none}
 .sec-h .count{flex:1}
+.fold{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 6px 0 0;background:none;border:0;border-radius:0;flex:none}
+.fold:hover{background:none}
+.fold:hover .lab{color:var(--text-primary)}
+.chev{width:8px;height:8px;border-right:2px solid var(--text-secondary);border-bottom:2px solid var(--text-secondary);transform:rotate(45deg) translate(-2px,-2px)}
+.fold[aria-expanded="false"] .chev{transform:rotate(-45deg)}
+@media (prefers-reduced-motion:no-preference){.chev{transition:transform .15s}}
 .count{font-size:.75rem;color:var(--accent);font-variant-numeric:tabular-nums;text-align:right;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lock{min-height:32px;padding:4px 10px;font-size:.75rem}
 .lock[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
@@ -151,7 +157,7 @@ footer{color:var(--text-secondary);font-size:.8rem;max-width:70ch}
         <p class="note" id="lookmsg" hidden></p>
       </div>
       <div class="sec">
-        <div class="sec-h"><span class="lab">Skin</span><button class="lock" id="lock-Skin" aria-pressed="false">Lock</button></div>
+        <div class="sec-h"><button class="fold" type="button" aria-expanded="true" aria-controls="skins" data-fold="Skin"><span class="chev" aria-hidden="true"></span><span class="lab" id="lab-Skin">Skin</span></button><span class="count" id="cnt-Skin"></span><button class="lock" id="lock-Skin" aria-pressed="false">Lock</button></div>
         <div class="skins" id="skins"></div>
         <p class="note" id="skinnote" hidden></p>
       </div>
@@ -191,7 +197,7 @@ function buildCats(){
   const box=$("cats");box.innerHTML="";
   CATS.forEach(c=>{
     const sec=document.createElement("div");sec.className="sec";sec.id="sec-"+c;
-    sec.innerHTML=`<div class="sec-h"><span class="lab" id="lab-${c}">${c}</span><span class="count" id="cnt-${c}"></span><button class="lock" id="lock-${c}" aria-pressed="false">Lock</button></div><div class="tiles" id="tiles-${c}" role="group" aria-labelledby="lab-${c}"></div>`;
+    sec.innerHTML=`<div class="sec-h"><button class="fold" type="button" aria-expanded="true" aria-controls="tiles-${c}" data-fold="${c}"><span class="chev" aria-hidden="true"></span><span class="lab" id="lab-${c}">${c}</span></button><span class="count" id="cnt-${c}"></span><button class="lock" id="lock-${c}" aria-pressed="false">Lock</button></div><div class="tiles" id="tiles-${c}" role="group" aria-labelledby="lab-${c}"></div>`;
     box.appendChild(sec);
     sec.querySelector(".tiles").onclick=e=>{const t=e.target.closest(".tile");if(!t)return;S[c]=t.dataset.v;render()};
   });
@@ -221,6 +227,7 @@ function fillSelects(){
     $("cnt-"+c).textContent=n!==undefined&&n!==""?`${S[c]} · ${n} on-chain`:"";
   });
   document.querySelectorAll(".chip").forEach(b=>b.setAttribute("aria-pressed",b.dataset.skin===S.Skin?"true":"false"));
+  $("cnt-Skin").textContent=`${S.Skin} · ${D.skins[S.Skin]?.count??""} on-chain`;
 }
 function setSkin(s,user){
   const dropped=[];S.Skin=s;const g=grp(s);
@@ -288,7 +295,17 @@ $("lookup").addEventListener("submit",e=>{e.preventDefault();
   if(gone.length){msg.textContent=`MidEvil #${n} wears ${gone.join(" and ")}, but the artists' board has no ${g} version of ${gone.length>1?"those":"it"}, so ${gone.length>1?"they're":"it's"} left off.`;msg.hidden=false}else msg.hidden=true;
   $("skinnote").hidden=true;render();
 });
-buildSkins();buildCats();render();
+// trait areas fold open/closed; on phones they start folded (Skin stays open) so the portrait is a short scroll away
+function setupFolds(){
+  const phone=matchMedia("(max-width:640px)").matches;
+  document.querySelectorAll(".fold").forEach(f=>{
+    const body=$(f.getAttribute("aria-controls"));
+    const set=open=>{f.setAttribute("aria-expanded",open?"true":"false");body.hidden=!open};
+    set(!(phone&&f.dataset.fold!=="Skin"));
+    f.onclick=()=>set(f.getAttribute("aria-expanded")!=="true");
+  });
+}
+buildSkins();buildCats();setupFolds();render();
 })();
 </script>
 </body>
