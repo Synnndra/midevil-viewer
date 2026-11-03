@@ -40,6 +40,10 @@
     {
       "src": "forge/layers/*.webp",
       "use": "@vercel/static"
+    },
+    {
+      "src": "forge/thumbs/*.webp",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
