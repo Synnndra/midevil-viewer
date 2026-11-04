@@ -174,7 +174,7 @@ footer{color:var(--text-secondary);font-size:.8rem;max-width:70ch}
 </main>
 
 
-<script src="data.js"></script>
+<script src="data.js?v=2"></script>
 <script>
 (()=>{
 const D=window.MIDEVILS_DATA;
@@ -280,12 +280,23 @@ function roll(){
 function realMatch(){
   for(const [n,t] of Object.entries(D.real)){if(t.Skin===S.Skin&&CATS.every(c=>t[c]===S[c])&&(!t.Shape||t.Shape===S.Shape))return n}return null;
 }
+// layer order, worked out by comparing every real MidEvil: glasses, hair and mouth traits overlap differently depending on the pair
+function stackOrder(g){
+  const T=D.stack,cl=g==="Dragon"?"Human":g;
+  let eyeTop=T.eyewearOnTop.includes(S.Eyewear)||!T.hairOverEyewear.includes(S.Headwear);
+  if(T.flip.includes(`${cl}|${S.Headwear}|${S.Eyewear}`))eyeTop=!eyeTop;
+  const top=eyeTop?["Headwear","Eyewear"]:["Eyewear","Headwear"];
+  let over=T.mouthOverHair.includes(S.Mouth);
+  if(T.mouthFlip.includes(`${S.Headwear}|${S.Mouth}`))over=!over;
+  const h=top.indexOf("Headwear");top.splice(over?h+1:h,0,"Mouth");
+  if(T.mouthUnderEyewear.includes(S.Mouth)&&S.Eyewear!=="None"&&top.indexOf("Mouth")>top.indexOf("Eyewear")){top.splice(top.indexOf("Mouth"),1);top.splice(top.indexOf("Eyewear"),0,"Mouth")}
+  return T.behind.includes(S.Specialty)?["Background","Specialty","Skin","Clothing","Head",...top]:["Background","Skin","Clothing","Head",...top,"Specialty"];
+}
 let ticket=0,drawn=0,current=Promise.resolve();
 function render(){current=draw();return current}
 async function draw(){
   fillSelects();const my=++ticket;const g=grp(S.Skin);
-  const top=D.headwearOverEyewear.includes(S.Headwear)?["Specialty","Eyewear","Headwear"]:["Headwear","Specialty","Eyewear"];
-  const order=["Background","Skin","Clothing","Head","Mouth",...top];
+  const order=stackOrder(g);
   // beast heads are their own layer, drawn over the clothing so hoods and collars sit behind the fur
   const files=order.map(c=>c==="Head"?D.heads?.[g]:S[c]&&S[c]!=="None"?fileOf(c,S[c],g):null).filter(Boolean);
   $("busy").hidden=false;$("shot").hidden=true;
