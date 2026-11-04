@@ -103,6 +103,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .chip{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:4px 12px 4px 4px;font-size:.85rem;background:var(--bg-secondary)}
 .chip .face{width:34px;height:34px;overflow:hidden;background:var(--bg-hover);border-radius:6px;flex:none}
 .chip .face img{width:80px;height:80px;max-width:none;margin:-9px 0 0 -23px;display:block}
+.chip .face.mouth img{width:220px;height:220px;margin:-105px 0 0 -104px}
 .chip[aria-pressed="true"]{border:1px solid transparent;background:linear-gradient(var(--bg-card),var(--bg-card)) padding-box,linear-gradient(135deg,#F89CFF 0%,#67E6F8 100%) border-box}
 .note{font-size:.85rem;color:var(--warn)}
 .lookup{display:flex;gap:8px}
@@ -161,11 +162,15 @@ footer{color:var(--text-secondary);font-size:.8rem;max-width:70ch}
         <div class="skins" id="skins"></div>
         <p class="note" id="skinnote" hidden></p>
       </div>
+      <div class="sec" id="sec-Shape" hidden>
+        <div class="sec-h"><button class="fold" type="button" aria-expanded="true" aria-controls="shapes" data-fold="Shape"><span class="chev" aria-hidden="true"></span><span class="lab" id="lab-Shape">Open or closed mouth</span></button><span class="count" id="cnt-Shape"></span><button class="lock" id="lock-Shape" aria-pressed="false">Lock</button></div>
+        <div class="skin-row" id="shapes" role="group" aria-labelledby="lab-Shape"></div>
+      </div>
       <div id="cats"></div>
     </section>
   </div>
 
-  <footer>Every layer is the artists' own art from the MidEvils Traits &amp; Rarity board. Beasts only get traits that were drawn for that beast, so a Tiger can't wear something that only fits a human head. Counts show how many live MidEvils carry the trait.</footer>
+  <footer>Every layer is the artists' own art, from the MidEvils Traits &amp; Rarity board and the real MidEvils. Beasts only get traits that were drawn for that beast, so a Tiger can't wear something that only fits a human head. Counts show how many live MidEvils carry the trait.</footer>
 </main>
 
 
@@ -175,12 +180,16 @@ footer{color:var(--text-secondary);font-size:.8rem;max-width:70ch}
 const D=window.MIDEVILS_DATA;
 const CATS=["Background","Clothing","Eyewear","Headwear","Mouth","Specialty"];
 const BEASTS=["Eagle","Wolf","Tiger","Gorilla","Creature","Dragon"];
-const S={Background:"Tan",Skin:"Sand",Clothing:"Letterman",Eyewear:"None",Headwear:"Burnt Tips",Mouth:"None",Specialty:"None"};
+const SHAPES=["Open","Closed"];
+const S={Background:"Tan",Skin:"Sand",Shape:"Closed",Clothing:"Letterman",Eyewear:"None",Headwear:"Burnt Tips",Mouth:"None",Specialty:"None"};
 const locks={};const imgs={};
 const $=id=>document.getElementById(id);
 const grp=s=>D.skins[s]?.group||"Human";
 const opts=(cat,g)=>cat==="Background"?D.backgrounds:(D.groups[g]?.[cat]||{});
-const fileOf=(cat,v,g)=>cat==="Skin"?D.skins[v]?.file:cat==="Background"?D.backgrounds[v]?.file:opts(cat,g)[v]?.file;
+// most faces, and the beards and stache that fit them, were drawn for both an open and a closed mouth
+const mouthArt=()=>opts("Mouth",grp(S.Skin))[S.Mouth]?.shapes;
+const hasShape=()=>!!(D.skins[S.Skin]?.shapes||mouthArt());
+const fileOf=(cat,v,g)=>cat==="Skin"?(D.skins[v]?.shapes?.[S.Shape]?.file||D.skins[v]?.file):cat==="Background"?D.backgrounds[v]?.file:cat==="Mouth"?(opts(cat,g)[v]?.shapes?.[S.Shape]||opts(cat,g)[v]?.file):opts(cat,g)[v]?.file;
 function load(f){if(!imgs[f])imgs[f]=new Promise((ok,no)=>{const i=new Image();i.decoding="async";i.onload=()=>ok(i);i.onerror=no;i.src="layers/"+f});return imgs[f]}
 // skin chips
 function buildSkins(){
@@ -193,6 +202,19 @@ function buildSkins(){
       b.innerHTML=`<span class="face"><img alt="" loading="lazy" src="layers/${D.heads?.[s]||D.skins[s].file}"></span><span>${s}</span>`;b.onclick=()=>setSkin(s,true);row.appendChild(b)});
     box.appendChild(row)});
 }
+function buildShapes(){
+  const box=$("shapes");box.innerHTML="";
+  SHAPES.forEach(sh=>{const b=document.createElement("button");b.type="button";b.className="chip";b.dataset.shape=sh;b.setAttribute("aria-pressed","false");
+    b.innerHTML=`<span class="face mouth"><img alt=""></span><span>${sh}</span>`;b.onclick=()=>{S.Shape=sh;render()};box.appendChild(b)});
+}
+function fillShapes(){
+  const on=hasShape();$("sec-Shape").hidden=!on;if(!on)return;
+  const skin=D.skins[S.Skin]?.shapes,mouth=mouthArt();
+  document.querySelectorAll("#shapes .chip").forEach(b=>{const sh=b.dataset.shape;
+    b.setAttribute("aria-pressed",sh===S.Shape?"true":"false");
+    const src="layers/"+(skin?.[sh]?.file||mouth[sh]),i=b.querySelector("img");if(i.getAttribute("src")!==src)i.setAttribute("src",src)});
+  const n=skin?.[S.Shape]?.count;$("cnt-Shape").textContent=n?`${S.Shape} · ${n} real ${S.Skin}`:"";
+}
 function buildCats(){
   const box=$("cats");box.innerHTML="";
   CATS.forEach(c=>{
@@ -201,7 +223,7 @@ function buildCats(){
     box.appendChild(sec);
     sec.querySelector(".tiles").onclick=e=>{const t=e.target.closest(".tile");if(!t)return;S[c]=t.dataset.v;render()};
   });
-  ["Skin",...CATS].forEach(c=>{const b=$("lock-"+c);b.onclick=()=>{locks[c]=!locks[c];b.setAttribute("aria-pressed",locks[c]?"true":"false");b.textContent=locks[c]?"Locked":"Lock"}});
+  ["Skin","Shape",...CATS].forEach(c=>{const b=$("lock-"+c);b.onclick=()=>{locks[c]=!locks[c];b.setAttribute("aria-pressed",locks[c]?"true":"false");b.textContent=locks[c]?"Locked":"Lock"}});
 }
 // one tile per trait, rebuilt only when the skin group changes (beasts have their own versions)
 const built={};
@@ -228,6 +250,7 @@ function fillSelects(){
   });
   document.querySelectorAll(".chip").forEach(b=>b.setAttribute("aria-pressed",b.dataset.skin===S.Skin?"true":"false"));
   $("cnt-Skin").textContent=`${S.Skin} · ${D.skins[S.Skin]?.count??""} on-chain`;
+  fillShapes();
 }
 function setSkin(s,user){
   const dropped=[];S.Skin=s;const g=grp(s);
@@ -249,12 +272,13 @@ function roll(){
     if(c!=="Background")e.push(["None",D.groups[g]?.[c+"__none"]||0]);
     S[c]=pickWeighted(e);
   });
+  if(!locks.Shape){const w=D.skins[S.Skin]?.shapes;S.Shape=pickWeighted(SHAPES.map(sh=>[sh,w?w[sh].count:1]))}
   const n=$("skinnote");
   if(!fits(S.Skin)){n.textContent="No skin can wear all the locked traits together, so some were re-rolled.";n.hidden=false}else n.hidden=true;
   render();
 }
 function realMatch(){
-  for(const [n,t] of Object.entries(D.real)){if(t.Skin===S.Skin&&CATS.every(c=>t[c]===S[c]))return n}return null;
+  for(const [n,t] of Object.entries(D.real)){if(t.Skin===S.Skin&&CATS.every(c=>t[c]===S[c])&&(!t.Shape||t.Shape===S.Shape))return n}return null;
 }
 let ticket=0,drawn=0,current=Promise.resolve();
 function render(){current=draw();return current}
@@ -295,17 +319,17 @@ $("lookup").addEventListener("submit",e=>{e.preventDefault();
   if(gone.length){msg.textContent=`MidEvil #${n} wears ${gone.join(" and ")}, but the artists' board has no ${g} version of ${gone.length>1?"those":"it"}, so ${gone.length>1?"they're":"it's"} left off.`;msg.hidden=false}else msg.hidden=true;
   $("skinnote").hidden=true;render();
 });
-// trait areas fold open/closed; on phones they start folded (Skin stays open) so the portrait is a short scroll away
+// trait areas fold open/closed; on phones they start folded (Skin and mouth stay open) so the portrait is a short scroll away
 function setupFolds(){
   const phone=matchMedia("(max-width:640px)").matches;
   document.querySelectorAll(".fold").forEach(f=>{
     const body=$(f.getAttribute("aria-controls"));
     const set=open=>{f.setAttribute("aria-expanded",open?"true":"false");body.hidden=!open};
-    set(!(phone&&f.dataset.fold!=="Skin"));
+    set(!(phone&&f.dataset.fold!=="Skin"&&f.dataset.fold!=="Shape"));
     f.onclick=()=>set(f.getAttribute("aria-expanded")!=="true");
   });
 }
-buildSkins();buildCats();setupFolds();render();
+buildSkins();buildShapes();buildCats();setupFolds();render();
 })();
 </script>
 </body>
