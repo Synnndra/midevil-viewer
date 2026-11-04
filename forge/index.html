@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>MidEvils Character Forge</title>
-<meta name="description" content="Build your own MidEvil from the original trait layers. Beasts only wear what was drawn for them.">
+<meta name="description" content="Build your own MidEvil from the artists' trait art. Beasts only wear what was drawn for them.">
 <meta name="theme-color" content="#1a1a1a">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
@@ -12,7 +12,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="MidEvils">
 <meta property="og:title" content="MidEvils Character Forge">
-<meta property="og:description" content="Build your own MidEvil from the original trait layers.">
+<meta property="og:description" content="Build your own MidEvil from the artists' trait art.">
 <meta property="og:url" content="https://gallery.midevils.com/forge/">
 <meta property="og:image" content="https://gallery.midevils.com/og.jpg">
 <meta name="twitter:card" content="summary_large_image">
@@ -22,8 +22,8 @@
 :root{
   --bg-primary:#1a1a1a;--bg-secondary:#242424;--bg-card:#2a2a2a;--bg-hover:#333;
   --border:#3a3a3a;--border-hover:#4a4a4a;
-  --text-primary:#fff;--text-secondary:#888;--text-dim:#666;
-  --accent:#3898FF;--accent-hover:#2d7acc;--success:#22c55e;--warn:#f5b84a;
+  --text-primary:#fff;--text-secondary:#c4c4c4;--text-dim:#a8a8a8;
+  --accent:#8CC4FF;--accent-fill:#1F6FD1;--accent-hover:#1a5fb5;--success:#4ade80;--warn:#f5b84a;
   --radius:12px;--radius-sm:8px;
   color-scheme:dark;
 }
@@ -42,7 +42,7 @@ a{color:var(--accent)}
 .nav-link{display:inline-flex;align-items:center;min-height:44px;padding:10px 16px;border-radius:var(--radius-sm);font-size:.85rem;font-weight:600;
   text-decoration:none;white-space:nowrap;color:#fff;background:var(--bg-card);border:1px solid var(--border-hover)}
 .nav-link:hover{background:var(--bg-hover)}
-.nav-link[aria-current="page"]{background:var(--accent);border-color:var(--accent)}
+.nav-link[aria-current="page"]{background:var(--accent-fill);border-color:var(--accent-fill)}
 /* Page */
 .wrap{max-width:1800px;margin:0 auto;padding:24px max(24px,env(safe-area-inset-right,0px)) 40px max(24px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:20px}
 .intro h1{font-size:1.4rem;font-weight:600;text-wrap:balance}
@@ -66,7 +66,7 @@ a{color:var(--accent)}
 button{font-family:inherit;font-size:.9rem;font-weight:600;cursor:pointer;min-height:44px;padding:10px 16px;border-radius:var(--radius-sm);
   color:var(--text-primary);background:var(--bg-card);border:1px solid var(--border)}
 button:hover{background:var(--bg-hover);border-color:var(--border-hover)}
-button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button.primary{background:var(--accent-fill);border-color:var(--accent-fill);color:#fff}
 button.primary:hover{background:var(--accent-hover)}
 button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .hint{color:var(--text-secondary);font-size:.8rem}
@@ -86,7 +86,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 @media (prefers-reduced-motion:no-preference){.chev{transition:transform .15s}}
 .count{font-size:.75rem;color:var(--accent);font-variant-numeric:tabular-nums;text-align:right;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lock{min-height:32px;padding:4px 10px;font-size:.75rem}
-.lock[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.lock[aria-pressed="true"]{background:var(--accent-fill);border-color:var(--accent-fill);color:#fff}
 .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:6px}
 .tile{display:flex;flex-direction:column;align-items:stretch;gap:4px;min-height:0;padding:4px 4px 6px;background:var(--bg-secondary);border:1px solid var(--border);
   font-size:.65rem;font-weight:600;line-height:1.2;text-align:center;min-width:0}
@@ -102,8 +102,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .sub{font-size:.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em}
 .chip{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:4px 12px 4px 4px;font-size:.85rem;background:var(--bg-secondary)}
 .chip .face{width:34px;height:34px;overflow:hidden;background:var(--bg-hover);border-radius:6px;flex:none}
-.chip .face img{width:80px;height:80px;max-width:none;margin:-9px 0 0 -23px;display:block}
-.chip .face.mouth img{width:220px;height:220px;margin:-105px 0 0 -104px}
+.chip .face img{width:100%;height:100%;display:block}
 .chip[aria-pressed="true"]{border:1px solid transparent;background:linear-gradient(var(--bg-card),var(--bg-card)) padding-box,linear-gradient(135deg,#F89CFF 0%,#67E6F8 100%) border-box}
 .note{font-size:.85rem;color:var(--warn)}
 .lookup{display:flex;gap:8px}
@@ -125,7 +124,7 @@ footer{color:var(--text-secondary);font-size:.8rem;max-width:70ch}
 <body>
 <header class="header">
   <div class="header-content">
-    <a href="/" aria-label="MidEvils Gallery"><img src="/MidLogo.png" alt="MidEvil" class="logo-img"></a>
+    <a href="/" aria-label="MidEvils Gallery"><img src="logo.webp" alt="MidEvil" class="logo-img" height="160" width="218"></a>
     <nav class="nav" aria-label="Site">
       <a class="nav-link" href="/">Gallery</a>
       <a class="nav-link" href="/forge/" aria-current="page">Forge</a>
@@ -136,18 +135,19 @@ footer{color:var(--text-secondary);font-size:.8rem;max-width:70ch}
 <main class="wrap">
   <div class="intro">
     <h1>Character Forge</h1>
-    <p>Build a MidEvil from the original trait layers. They're only half evil.</p>
+    <p>Build a MidEvil from the artists' trait art. They're only half evil.</p>
   </div>
 
   <div class="grid">
     <section class="stage" aria-label="Portrait">
-      <div class="frame"><canvas id="cv" width="1024" height="1024" aria-label="Your MidEvil"></canvas><img id="shot" alt="Your MidEvil, press and hold to save" hidden><span class="busy" id="busy" hidden>loading</span></div>
-      <div class="caption"><b id="title">Loading the armory</b><span id="realhit" class="real"></span></div>
+      <div class="frame"><canvas id="cv" width="1024" height="1024" role="img" aria-label="Your MidEvil"></canvas><img id="shot" alt="Your MidEvil, press and hold to save" hidden><span class="busy" id="busy" hidden>loading</span></div>
+      <div class="caption" role="status"><b id="title">Loading the armory</b><span id="realhit" class="real"></span></div>
       <div class="actions">
         <button class="primary" id="roll">Roll a MidEvil</button>
         <button id="save">Save PNG</button>
         <button id="clear">Strip to skin</button>
       </div>
+      <p class="note" id="rulenote" role="status" hidden></p>
       <p class="hint" id="savehint">Roll keeps locked traits. Common traits come up more often, the same as on the real collection.</p>
     </section>
 
@@ -155,12 +155,12 @@ footer{color:var(--text-secondary);font-size:.8rem;max-width:70ch}
       <div class="sec">
         <div class="sec-h"><span class="lab">Load a real MidEvil</span></div>
         <form class="lookup" id="lookup"><input id="num" inputmode="numeric" placeholder="e.g. 2526" aria-label="MidEvil number"><button type="submit">Load</button></form>
-        <p class="note" id="lookmsg" hidden></p>
+        <p class="note" id="lookmsg" role="status" hidden></p>
       </div>
       <div class="sec">
         <div class="sec-h"><button class="fold" type="button" aria-expanded="true" aria-controls="skins" data-fold="Skin"><span class="chev" aria-hidden="true"></span><span class="lab" id="lab-Skin">Skin</span></button><span class="count" id="cnt-Skin"></span><button class="lock" id="lock-Skin" aria-pressed="false">Lock</button></div>
         <div class="skins" id="skins"></div>
-        <p class="note" id="skinnote" hidden></p>
+        <p class="note" id="skinnote" role="status" hidden></p>
       </div>
       <div class="sec" id="sec-Shape" hidden>
         <div class="sec-h"><button class="fold" type="button" aria-expanded="true" aria-controls="shapes" data-fold="Shape"><span class="chev" aria-hidden="true"></span><span class="lab" id="lab-Shape">Open or closed mouth</span></button><span class="count" id="cnt-Shape"></span><button class="lock" id="lock-Shape" aria-pressed="false">Lock</button></div>
@@ -170,11 +170,11 @@ footer{color:var(--text-secondary);font-size:.8rem;max-width:70ch}
     </section>
   </div>
 
-  <footer>Every layer is the artists' own art, from the MidEvils Traits &amp; Rarity board and the real MidEvils. Beasts only get traits that were drawn for that beast, so a Tiger can't wear something that only fits a human head. Counts show how many live MidEvils carry the trait.</footer>
+  <footer>Every layer is the artists' own art, from the MidEvils Traits &amp; Rarity board and the real MidEvils. Beasts only get traits that were drawn for that beast, so a Tiger can't wear something that only fits a human head. Counts and matches cover the live MidEvil OGs as of November 2026, not 1/1s.</footer>
 </main>
 
 
-<script src="data.js?v=3"></script>
+<script src="data.js?v=6"></script>
 <script>
 (()=>{
 const D=window.MIDEVILS_DATA;
@@ -182,15 +182,16 @@ const CATS=["Background","Clothing","Eyewear","Headwear","Mouth","Specialty"];
 const BEASTS=["Eagle","Wolf","Tiger","Gorilla","Creature","Dragon"];
 const SHAPES=["Open","Closed"];
 const S={Background:"Tan",Skin:"Sand",Shape:"Closed",Clothing:"Letterman",Eyewear:"None",Headwear:"Burnt Tips",Mouth:"None",Specialty:"None"};
-const locks={};const imgs={};
+const locks={};const imgs=new Map();const KEEP_IMGS=60;
 const $=id=>document.getElementById(id);
 const grp=s=>D.skins[s]?.group||"Human";
 const opts=(cat,g)=>cat==="Background"?D.backgrounds:(D.groups[g]?.[cat]||{});
 // most faces, and the beards and stache that fit them, were drawn for both an open and a closed mouth
 const mouthArt=()=>opts("Mouth",grp(S.Skin))[S.Mouth]?.shapes;
-const hasShape=()=>!!(D.skins[S.Skin]?.shapes||mouthArt());
+const hasShape=()=>!!(D.skins[S.Skin]?.shapes||mouthArt())&&!D.stack.mouthHidden.includes(S.Headwear);
 const fileOf=(cat,v,g)=>cat==="Skin"?(D.skins[v]?.shapes?.[S.Shape]?.file||D.skins[v]?.file):cat==="Background"?D.backgrounds[v]?.file:cat==="Mouth"?(opts(cat,g)[v]?.shapes?.[S.Shape]||opts(cat,g)[v]?.file):opts(cat,g)[v]?.file;
-function load(f){if(!imgs[f])imgs[f]=new Promise((ok,no)=>{const i=new Image();i.decoding="async";i.onload=()=>ok(i);i.onerror=no;i.src="layers/"+f});return imgs[f]}
+// recently used layers stay decoded so phones don't run out of memory; a failed layer is forgotten so it can be tried again
+function load(f){let p=imgs.get(f);if(p)imgs.delete(f);else p=new Promise((ok,no)=>{const i=new Image();i.decoding="async";i.onload=()=>ok(i);i.onerror=e=>{imgs.delete(f);no(e)};i.src="layers/"+f});imgs.set(f,p);if(imgs.size>KEEP_IMGS)imgs.delete(imgs.keys().next().value);return p}
 // skin chips
 function buildSkins(){
   const hum=Object.keys(D.skins).filter(s=>grp(s)==="Human").sort();
@@ -199,8 +200,20 @@ function buildSkins(){
     const h=document.createElement("div");h.className="sub";h.textContent=t;box.appendChild(h);
     const row=document.createElement("div");row.className="skin-row";
     list.forEach(s=>{const b=document.createElement("button");b.className="chip";b.dataset.skin=s;b.setAttribute("aria-pressed","false");
-      b.innerHTML=`<span class="face"><img alt="" loading="lazy" src="layers/${D.heads?.[s]||D.skins[s].file}"></span><span>${s}</span>`;b.onclick=()=>setSkin(s,true);row.appendChild(b)});
+      b.innerHTML=`<span class="face"><img alt="" loading="lazy" src="faces/${D.heads?.[s]||D.skins[s].file}"></span><span>${s}</span>`;b.onclick=()=>setSkin(s,true);row.appendChild(b)});
     box.appendChild(row)});
+}
+// no real MidEvil wears these traits with these helmets, so the last pick wins and the other comes off
+function applyBlocks(c){
+  const B=D.stack.blocks,n=$("rulenote");let msg="";
+  if(c==="Headwear"){
+    const off=(B[S.Headwear]||[]).filter(k=>S[k]!=="None"),names=off.map(k=>S[k]);
+    off.forEach(k=>{S[k]="None"});
+    if(names.length)msg=`No real MidEvil wears ${names.join(" or ")} with a ${S.Headwear}, so ${names.length>1?"they":"it"} came off.`;
+  }else if(B[S.Headwear]?.includes(c)&&S[c]!=="None"){
+    msg=`No real MidEvil wears a ${S.Headwear} with ${S[c]}, so the helmet came off.`;S.Headwear="None";
+  }
+  n.textContent=msg;n.hidden=!msg;
 }
 function buildShapes(){
   const box=$("shapes");box.innerHTML="";
@@ -212,7 +225,7 @@ function fillShapes(){
   const skin=D.skins[S.Skin]?.shapes,mouth=mouthArt();
   document.querySelectorAll("#shapes .chip").forEach(b=>{const sh=b.dataset.shape;
     b.setAttribute("aria-pressed",sh===S.Shape?"true":"false");
-    const src="layers/"+(skin?.[sh]?.file||mouth[sh]),i=b.querySelector("img");if(i.getAttribute("src")!==src)i.setAttribute("src",src)});
+    const src="faces/mouth-"+(skin?.[sh]?.file||mouth[sh]),i=b.querySelector("img");if(i.getAttribute("src")!==src)i.setAttribute("src",src)});
   const n=skin?.[S.Shape]?.count;$("cnt-Shape").textContent=n?`${S.Shape} · ${n} real ${S.Skin}`:"";
 }
 function buildCats(){
@@ -221,9 +234,9 @@ function buildCats(){
     const sec=document.createElement("div");sec.className="sec";sec.id="sec-"+c;
     sec.innerHTML=`<div class="sec-h"><button class="fold" type="button" aria-expanded="true" aria-controls="tiles-${c}" data-fold="${c}"><span class="chev" aria-hidden="true"></span><span class="lab" id="lab-${c}">${c}</span></button><span class="count" id="cnt-${c}"></span><button class="lock" id="lock-${c}" aria-pressed="false">Lock</button></div><div class="tiles" id="tiles-${c}" role="group" aria-labelledby="lab-${c}"></div>`;
     box.appendChild(sec);
-    sec.querySelector(".tiles").onclick=e=>{const t=e.target.closest(".tile");if(!t)return;S[c]=t.dataset.v;render()};
+    sec.querySelector(".tiles").onclick=e=>{const t=e.target.closest(".tile");if(!t)return;S[c]=t.dataset.v;applyBlocks(c);render()};
   });
-  ["Skin","Shape",...CATS].forEach(c=>{const b=$("lock-"+c);b.onclick=()=>{locks[c]=!locks[c];b.setAttribute("aria-pressed",locks[c]?"true":"false");b.textContent=locks[c]?"Locked":"Lock"}});
+  ["Skin","Shape",...CATS].forEach(c=>{const b=$("lock-"+c);b.setAttribute("aria-label","Lock "+(c==="Shape"?"mouth":c));b.onclick=()=>{locks[c]=!locks[c];b.setAttribute("aria-pressed",locks[c]?"true":"false");b.textContent=locks[c]?"Locked":"Lock"}});
 }
 // one tile per trait, rebuilt only when the skin group changes (beasts have their own versions)
 const built={};
@@ -272,14 +285,22 @@ function roll(){
     if(c!=="Background")e.push(["None",D.groups[g]?.[c+"__none"]||0]);
     S[c]=pickWeighted(e);
   });
+  // a rolled helmet can't take a trait that's locked on, and otherwise clears what it doesn't allow
+  const B=D.stack.blocks;
+  if(!locks.Headwear&&(B[S.Headwear]||[]).some(k=>locks[k]&&S[k]!=="None")){
+    const ok=Object.entries(opts("Headwear",g)).filter(([k])=>!(B[k]||[]).some(x=>locks[x]&&S[x]!=="None")).map(([k,v])=>[k,v.count]);
+    ok.push(["None",D.groups[g]?.Headwear__none||0]);S.Headwear=pickWeighted(ok);
+  }
+  (B[S.Headwear]||[]).forEach(k=>{S[k]="None"});
   if(!locks.Shape){const w=D.skins[S.Skin]?.shapes;S.Shape=pickWeighted(SHAPES.map(sh=>[sh,w?w[sh].count:1]))}
   const n=$("skinnote");
   if(!fits(S.Skin)){n.textContent="No skin can wear all the locked traits together, so some were re-rolled.";n.hidden=false}else n.hidden=true;
   render();
 }
 function realMatch(){
-  for(const [n,t] of Object.entries(D.real)){if(t.Skin===S.Skin&&CATS.every(c=>t[c]===S[c])&&(!t.Shape||t.Shape===S.Shape))return n}return null;
+  for(const [n,t] of Object.entries(D.real)){if(t.Skin===S.Skin&&CATS.every(c=>t[c]===S[c])&&(!t.Shape||!hasShape()||t.Shape===S.Shape))return n}return null;
 }
+const patchOf=g=>D.stack.patches.find(p=>p.groups.includes(g)&&p.Headwear===S.Headwear&&p.Clothing===S.Clothing);
 // layer order, worked out by comparing every real MidEvil: glasses, hair and mouth traits overlap differently depending on the pair
 function stackOrder(g){
   const T=D.stack,cl=g==="Dragon"?"Human":g;
@@ -291,8 +312,13 @@ function stackOrder(g){
   const h=top.indexOf("Headwear");top.splice(over?h+1:h,0,"Mouth");
   if(T.mouthUnderEyewear.includes(S.Mouth)&&S.Eyewear!=="None"&&top.indexOf("Mouth")>top.indexOf("Eyewear")){top.splice(top.indexOf("Mouth"),1);top.splice(top.indexOf("Eyewear"),0,"Mouth")}
   // on these pairs the real glasses go through the hair: the arm sits under it, the lens over it
-  const mid=T.split.pairs.includes(`${cl}|${S.Headwear}|${S.Eyewear}`)?["Arm",...(T.mouthOverHair.includes(S.Mouth)?["Headwear","Mouth"]:["Mouth","Headwear"]),"Lens"]:top;
-  return T.behind.includes(S.Specialty)?["Background","Specialty","Skin","Clothing","Head",...mid]:["Background","Skin","Clothing","Head",...mid,"Specialty"];
+  const mid=T.split.pairs.includes(`${cl}|${S.Headwear}|${S.Eyewear}`)?["Arm",...(over?["Headwear","Mouth"]:["Mouth","Headwear"]),"Lens"]:top;
+  // a patch belongs to the headwear, so a beard, glasses or falcon still sit on top of it
+  if(patchOf(g))mid.splice(mid.indexOf("Headwear")+1,0,"Patch");
+  const o=T.behind.includes(S.Specialty)?["Background","Specialty","Skin","Clothing","Head",...mid]:["Background","Skin","Clothing","Head",...mid,"Specialty"];
+  // bald tops and some hair sit on a smooth scalp in the real art, not the skin's buzz cut
+  if(T.smoothScalp.includes(S.Headwear)&&D.skins[S.Skin]?.scalp)o.splice(o.indexOf("Skin")+1,0,"Scalp");
+  return o;
 }
 let ticket=0,drawn=0,current=Promise.resolve();
 function render(){current=draw();return current}
@@ -300,8 +326,7 @@ async function draw(){
   fillSelects();const my=++ticket;const g=grp(S.Skin);
   const order=stackOrder(g);
   // beast heads are their own layer, drawn over the clothing so hoods and collars sit behind the fur
-  const parts=order.map(c=>{const k=c==="Arm"||c==="Lens"?"Eyewear":c;return {c,f:c==="Head"?D.heads?.[g]:S[k]&&S[k]!=="None"?fileOf(k,S[k],g):null}}).filter(p=>p.f);
-  D.stack.patches.forEach(p=>{if(p.Headwear===S.Headwear&&p.Clothing===S.Clothing)parts.push({c:"Patch",f:p.file})});
+  const parts=order.map(c=>{const k=c==="Arm"||c==="Lens"?"Eyewear":c;return {c,f:c==="Head"?D.heads?.[g]:c==="Patch"?patchOf(g).file:c==="Scalp"?D.skins[S.Skin].scalp:S[k]&&S[k]!=="None"?fileOf(k,S[k],g):null}}).filter(p=>p.f);
   const files=parts.map(p=>p.f);
   $("busy").hidden=false;$("shot").hidden=true;
   try{
@@ -312,12 +337,13 @@ async function draw(){
       if(c==="Arm")x.drawImage(i,0,0,sx,h,0,0,cut,cv.height);
       else if(c==="Lens")x.drawImage(i,sx,0,w-sx,h,cut,0,cv.width-cut,cv.height);
       else x.drawImage(i,0,0,cv.width,cv.height)});drawn=my;
-  }catch(e){if(my!==ticket)return;$("title").textContent="A layer failed to load. Reload the page to try again.";$("busy").hidden=true;return}
+  }catch(e){if(my!==ticket)return;$("title").textContent="A layer failed to load. Try again, or reload the page.";$("busy").hidden=true;return}
   $("busy").hidden=true;
-  const bits=[S.Clothing,S.Headwear,S.Eyewear,S.Mouth,S.Specialty].filter(v=>v&&v!=="None");
   $("title").textContent=`${S.Skin} MidEvil`;
-  const m=realMatch();$("realhit").textContent=m?`Same traits as MidEvil #${m}`:(bits.length?"A combination nobody holds":"");
+  $("cv").setAttribute("aria-label",[S.Skin+" MidEvil",...[...CATS.map(c=>S[c]),hasShape()?S.Shape+" mouth":""].filter(v=>v&&v!=="None")].join(", "));
+  const m=realMatch();$("realhit").textContent=m?`Same traits as MidEvil #${m}`:"No live MidEvil has these traits";
 }
+$("rulenote").hidden=true;document.querySelector("main").addEventListener("click",e=>{if(e.target.closest("button"))$("rulenote").hidden=true},true);
 $("roll").onclick=roll;
 $("clear").onclick=()=>{CATS.forEach(c=>{if(c!=="Background"&&!locks[c])S[c]="None"});render()};
 $("save").onclick=async()=>{

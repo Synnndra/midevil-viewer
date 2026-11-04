@@ -44,6 +44,14 @@
     {
       "src": "forge/thumbs/*.webp",
       "use": "@vercel/static"
+    },
+    {
+      "src": "forge/*.webp",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "forge/faces/*.webp",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
