@@ -174,7 +174,7 @@ footer{color:var(--text-secondary);font-size:.8rem;max-width:70ch}
 </main>
 
 
-<script src="data.js?v=2"></script>
+<script src="data.js?v=3"></script>
 <script>
 (()=>{
 const D=window.MIDEVILS_DATA;
@@ -290,7 +290,9 @@ function stackOrder(g){
   if(T.mouthFlip.includes(`${S.Headwear}|${S.Mouth}`))over=!over;
   const h=top.indexOf("Headwear");top.splice(over?h+1:h,0,"Mouth");
   if(T.mouthUnderEyewear.includes(S.Mouth)&&S.Eyewear!=="None"&&top.indexOf("Mouth")>top.indexOf("Eyewear")){top.splice(top.indexOf("Mouth"),1);top.splice(top.indexOf("Eyewear"),0,"Mouth")}
-  return T.behind.includes(S.Specialty)?["Background","Specialty","Skin","Clothing","Head",...top]:["Background","Skin","Clothing","Head",...top,"Specialty"];
+  // on these pairs the real glasses go through the hair: the arm sits under it, the lens over it
+  const mid=T.split.pairs.includes(`${cl}|${S.Headwear}|${S.Eyewear}`)?["Arm",...(T.mouthOverHair.includes(S.Mouth)?["Headwear","Mouth"]:["Mouth","Headwear"]),"Lens"]:top;
+  return T.behind.includes(S.Specialty)?["Background","Specialty","Skin","Clothing","Head",...mid]:["Background","Skin","Clothing","Head",...mid,"Specialty"];
 }
 let ticket=0,drawn=0,current=Promise.resolve();
 function render(){current=draw();return current}
@@ -298,12 +300,18 @@ async function draw(){
   fillSelects();const my=++ticket;const g=grp(S.Skin);
   const order=stackOrder(g);
   // beast heads are their own layer, drawn over the clothing so hoods and collars sit behind the fur
-  const files=order.map(c=>c==="Head"?D.heads?.[g]:S[c]&&S[c]!=="None"?fileOf(c,S[c],g):null).filter(Boolean);
+  const parts=order.map(c=>{const k=c==="Arm"||c==="Lens"?"Eyewear":c;return {c,f:c==="Head"?D.heads?.[g]:S[k]&&S[k]!=="None"?fileOf(k,S[k],g):null}}).filter(p=>p.f);
+  D.stack.patches.forEach(p=>{if(p.Headwear===S.Headwear&&p.Clothing===S.Clothing)parts.push({c:"Patch",f:p.file})});
+  const files=parts.map(p=>p.f);
   $("busy").hidden=false;$("shot").hidden=true;
   try{
     const layers=await Promise.all(files.map(load));if(my!==ticket)return;
     const cv=$("cv"),x=cv.getContext("2d");x.clearRect(0,0,cv.width,cv.height);
-    layers.forEach(i=>x.drawImage(i,0,0,cv.width,cv.height));drawn=my;
+    const cut=D.stack.split.cuts[S.Eyewear];
+    layers.forEach((i,n)=>{const c=parts[n].c,w=i.naturalWidth,h=i.naturalHeight,sx=cut*w/cv.width;
+      if(c==="Arm")x.drawImage(i,0,0,sx,h,0,0,cut,cv.height);
+      else if(c==="Lens")x.drawImage(i,sx,0,w-sx,h,cut,0,cv.width-cut,cv.height);
+      else x.drawImage(i,0,0,cv.width,cv.height)});drawn=my;
   }catch(e){if(my!==ticket)return;$("title").textContent="A layer failed to load. Reload the page to try again.";$("busy").hidden=true;return}
   $("busy").hidden=true;
   const bits=[S.Clothing,S.Headwear,S.Eyewear,S.Mouth,S.Specialty].filter(v=>v&&v!=="None");
