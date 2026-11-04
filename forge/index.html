@@ -149,6 +149,7 @@ footer{color:var(--text-secondary);font-size:.8rem;max-width:70ch}
       </div>
       <p class="note" id="rulenote" role="status" hidden></p>
       <p class="hint" id="savehint">Roll keeps locked traits. Common traits come up more often, the same as on the real collection.</p>
+      <p class="hint">Rebuilt from the trait art for fun, so it can differ slightly from the real one. <a href="/">Download your real MidEvil from the Gallery.</a></p>
     </section>
 
     <section class="rack" aria-label="Traits">
@@ -174,7 +175,7 @@ footer{color:var(--text-secondary);font-size:.8rem;max-width:70ch}
 </main>
 
 
-<script src="data.js?v=6"></script>
+<script src="data.js?v=9"></script>
 <script>
 (()=>{
 const D=window.MIDEVILS_DATA;
@@ -204,14 +205,16 @@ function buildSkins(){
     box.appendChild(row)});
 }
 // no real MidEvil wears these traits with these helmets, so the last pick wins and the other comes off
+const blocked=(h,c,v)=>v!=="None"&&(D.stack.blocks[h]?.includes(c)||D.stack.blockValues[h]?.[c]?.includes(v));
+const clashes=h=>["Eyewear","Mouth"].filter(k=>blocked(h,k,S[k]));
 function applyBlocks(c){
-  const B=D.stack.blocks,n=$("rulenote");let msg="";
+  const n=$("rulenote"),h=S.Headwear,hair=D.stack.blockValues[h]?h:`a ${h}`;let msg="";
   if(c==="Headwear"){
-    const off=(B[S.Headwear]||[]).filter(k=>S[k]!=="None"),names=off.map(k=>S[k]);
+    const off=clashes(h),names=off.map(k=>S[k]);
     off.forEach(k=>{S[k]="None"});
-    if(names.length)msg=`No real MidEvil wears ${names.join(" or ")} with a ${S.Headwear}, so ${names.length>1?"they":"it"} came off.`;
-  }else if(B[S.Headwear]?.includes(c)&&S[c]!=="None"){
-    msg=`No real MidEvil wears a ${S.Headwear} with ${S[c]}, so the helmet came off.`;S.Headwear="None";
+    if(names.length)msg=`No real MidEvil wears ${names.join(" or ")} with ${hair}, so ${names.length>1?"they":"it"} came off.`;
+  }else if(blocked(h,c,S[c])){
+    msg=`No real MidEvil wears ${hair} with ${S[c]}, so ${D.stack.blockValues[h]?`the ${h}`:"the helmet"} came off.`;S.Headwear="None";
   }
   n.textContent=msg;n.hidden=!msg;
 }
@@ -286,12 +289,12 @@ function roll(){
     S[c]=pickWeighted(e);
   });
   // a rolled helmet can't take a trait that's locked on, and otherwise clears what it doesn't allow
-  const B=D.stack.blocks;
-  if(!locks.Headwear&&(B[S.Headwear]||[]).some(k=>locks[k]&&S[k]!=="None")){
-    const ok=Object.entries(opts("Headwear",g)).filter(([k])=>!(B[k]||[]).some(x=>locks[x]&&S[x]!=="None")).map(([k,v])=>[k,v.count]);
+  const lockedClash=h=>clashes(h).some(k=>locks[k]);
+  if(!locks.Headwear&&lockedClash(S.Headwear)){
+    const ok=Object.entries(opts("Headwear",g)).filter(([k])=>!lockedClash(k)).map(([k,v])=>[k,v.count]);
     ok.push(["None",D.groups[g]?.Headwear__none||0]);S.Headwear=pickWeighted(ok);
   }
-  (B[S.Headwear]||[]).forEach(k=>{S[k]="None"});
+  clashes(S.Headwear).forEach(k=>{S[k]="None"});
   if(!locks.Shape){const w=D.skins[S.Skin]?.shapes;S.Shape=pickWeighted(SHAPES.map(sh=>[sh,w?w[sh].count:1]))}
   const n=$("skinnote");
   if(!fits(S.Skin)){n.textContent="No skin can wear all the locked traits together, so some were re-rolled.";n.hidden=false}else n.hidden=true;
