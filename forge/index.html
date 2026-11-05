@@ -45,7 +45,12 @@ a{color:var(--accent)}
 .nav-link[aria-current="page"]{background:var(--accent-fill);border-color:var(--accent-fill)}
 /* Page */
 .wrap{max-width:1800px;margin:0 auto;padding:24px max(24px,env(safe-area-inset-right,0px)) 40px max(24px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:20px}
+.intro{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 20px}
 .intro h1{font-size:1.4rem;font-weight:600;text-wrap:balance}
+.toggle{display:inline-flex;flex:none;background:rgba(0,0,0,.3);border:1px solid var(--border-hover);border-radius:var(--radius-sm);padding:3px;gap:3px}
+.toggle button{border:0;background:none;min-width:84px;border-radius:6px}
+.toggle button:hover{background:var(--bg-hover)}
+.toggle button[aria-pressed="true"]{background:var(--accent-fill);color:#fff}
 .intro p{color:var(--text-secondary);font-size:.9rem;max-width:70ch}
 .grid{display:grid;grid-template-columns:minmax(0,1fr);gap:20px}
 @media (min-width:900px){.grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}
@@ -134,8 +139,11 @@ footer{color:var(--text-secondary);font-size:.8rem;max-width:70ch}
 
 <main class="wrap">
   <div class="intro">
-    <h1>Character Forge</h1>
-    <p>Build a MidEvil from the artists' trait art. They're only half evil.</p>
+    <div>
+      <h1>Character Forge</h1>
+      <p id="tagline">Build a MidEvil from the artists' trait art. They're only half evil.</p>
+    </div>
+    <div class="toggle" role="group" aria-label="Collection"><button type="button" id="set-og" aria-pressed="true">OG</button><button type="button" id="set-orcs" aria-pressed="false">Orcs</button></div>
   </div>
 
   <div class="grid">
@@ -149,12 +157,12 @@ footer{color:var(--text-secondary);font-size:.8rem;max-width:70ch}
       </div>
       <p class="note" id="rulenote" role="status" hidden></p>
       <p class="hint" id="savehint">Roll keeps locked traits. Common traits come up more often, the same as on the real collection.</p>
-      <p class="hint">Rebuilt from the trait art for fun, so it can differ slightly from the real one. <a href="/">Download your real MidEvil from the Gallery.</a></p>
+      <p class="hint">Rebuilt from the trait art for fun, so it can differ slightly from the real one. <a href="/" id="gallerylink">Download your real MidEvil from the Gallery.</a></p>
     </section>
 
     <section class="rack" aria-label="Traits">
       <div class="sec">
-        <div class="sec-h"><span class="lab">Load a real MidEvil</span></div>
+        <div class="sec-h"><span class="lab" id="loadlab">Load a real MidEvil</span></div>
         <form class="lookup" id="lookup"><input id="num" inputmode="numeric" placeholder="e.g. 2526" aria-label="MidEvil number"><button type="submit">Load</button></form>
         <p class="note" id="lookmsg" role="status" hidden></p>
       </div>
@@ -171,18 +179,29 @@ footer{color:var(--text-secondary);font-size:.8rem;max-width:70ch}
     </section>
   </div>
 
-  <footer>Every layer is the artists' own art, from the MidEvils Traits &amp; Rarity board and the real MidEvils. Beasts only get traits that were drawn for that beast, so a Tiger can't wear something that only fits a human head. Counts and matches cover the live MidEvil OGs as of November 2026, not 1/1s.</footer>
+  <footer id="foot">Every layer is the artists' own art, from the MidEvils Traits &amp; Rarity board and the real MidEvils. Beasts only get traits that were drawn for that beast, so a Tiger can't wear something that only fits a human head. Counts and matches cover the live MidEvil OGs as of November 2026, not 1/1s.</footer>
 </main>
 
 
-<script src="data.js?v=11"></script>
+<script src="data.js?v=12"></script>
 <script>
 (()=>{
-const D=window.MIDEVILS_DATA;
+let D=window.MIDEVILS_DATA;
+// the two collections share one page: each has its own art, counts, real records and stacking rules
+const SETS={
+  og:{name:"MidEvil",a:"a MidEvil",file:"midevil",eg:"2526",beasts:["Eagle","Wolf","Tiger","Gorilla","Creature"],live:"MidEvil OG",
+    tag:"Build a MidEvil from the artists' trait art. They're only half evil.",
+    foot:"Every layer is the artists' own art, from the MidEvils Traits & Rarity board and the real MidEvils. Beasts only get traits that were drawn for that beast, so a Tiger can't wear something that only fits a human head. Counts and matches cover the live MidEvil OGs as of November 2026, not 1/1s.",
+    start:{Background:"Tan",Skin:"Sand",Shape:"Closed",Clothing:"Letterman",Eyewear:"None",Headwear:"Burnt Tips",Mouth:"None",Specialty:"None"}},
+  orcs:{name:"Orc",a:"an Orc",file:"orc",eg:"50",beasts:[],live:"Orc",
+    tag:"Build an Orc from the artists' trait art.",
+    foot:"Every layer is the artists' own art, from Create an Orc on The Horde and the real Orcs. Counts and matches cover the live Orcs as of November 2026, not 1/1s.",
+    start:{Background:"Olive",Skin:"Moss",Shape:"Closed",Clothing:"Jock",Eyewear:"None",Headwear:"Green Cap",Mouth:"None",Specialty:"None"}}
+};
+let set="og",C=SETS.og;const saved={};
 const CATS=["Background","Clothing","Eyewear","Headwear","Mouth","Specialty"];
-const BEASTS=["Eagle","Wolf","Tiger","Gorilla","Creature"];
 const SHAPES=["Open","Closed"];
-const S={Background:"Tan",Skin:"Sand",Shape:"Closed",Clothing:"Letterman",Eyewear:"None",Headwear:"Burnt Tips",Mouth:"None",Specialty:"None"};
+const S={...SETS.og.start};
 const locks={};const imgs=new Map();const KEEP_IMGS=60;
 const $=id=>document.getElementById(id);
 const grp=s=>D.skins[s]?.group||"Human";
@@ -190,21 +209,21 @@ const opts=(cat,g)=>cat==="Background"?D.backgrounds:(D.groups[g]?.[cat]||{});
 // most faces, and the beards and stache that fit them, were drawn for both an open and a closed mouth
 const mouthArt=()=>opts("Mouth",grp(S.Skin))[S.Mouth]?.shapes;
 const hasShape=()=>!!(D.skins[S.Skin]?.shapes||mouthArt())&&!D.stack.mouthHidden.includes(S.Headwear);
-const fileOf=(cat,v,g)=>cat==="Skin"?(D.skins[v]?.shapes?.[S.Shape]?.file||D.skins[v]?.file):cat==="Background"?D.backgrounds[v]?.file:cat==="Mouth"?(opts(cat,g)[v]?.shapes?.[S.Shape]||opts(cat,g)[v]?.file):opts(cat,g)[v]?.file;
+const fileOf=(cat,v,g)=>cat==="Skin"?(D.skins[v]?.shapes?.[S.Shape]?.file||D.skins[v]?.file):cat==="Background"?D.backgrounds[v]?.file:cat==="Mouth"?(opts(cat,g)[v]?.shapes?.[S.Shape]||opts(cat,g)[v]?.file):cat==="Clothing"?(opts(cat,g)[v]?.shapes?.[D.skins[S.Skin]?.shapes?S.Shape:"Closed"]||opts(cat,g)[v]?.file):opts(cat,g)[v]?.file;
 // recently used layers stay decoded so phones don't run out of memory; a failed layer is forgotten so it can be tried again
 function load(f){let p=imgs.get(f);if(p)imgs.delete(f);else p=new Promise((ok,no)=>{const i=new Image();i.decoding="async";i.onload=()=>ok(i);i.onerror=e=>{imgs.delete(f);no(e)};i.src="layers/"+f});imgs.set(f,p);if(imgs.size>KEEP_IMGS)imgs.delete(imgs.keys().next().value);return p}
 // skin chips
 function buildSkins(){
   const hum=Object.keys(D.skins).filter(s=>grp(s)==="Human").sort();
   const box=$("skins");box.innerHTML="";
-  [["Skins",hum],["Beasts",BEASTS]].forEach(([t,list])=>{
+  [["Skins",hum],...(C.beasts.length?[["Beasts",C.beasts]]:[])].forEach(([t,list])=>{
     const h=document.createElement("div");h.className="sub";h.textContent=t;box.appendChild(h);
     const row=document.createElement("div");row.className="skin-row";
     list.forEach(s=>{const b=document.createElement("button");b.className="chip";b.dataset.skin=s;b.setAttribute("aria-pressed","false");
       b.innerHTML=`<span class="face"><img alt="" loading="lazy" src="faces/${D.heads?.[s]||D.skins[s].file}"></span><span>${s}</span>`;b.onclick=()=>setSkin(s,true);row.appendChild(b)});
     box.appendChild(row)});
 }
-// no real MidEvil wears these traits with these helmets, so the last pick wins and the other comes off
+// no real one wears these traits with these helmets, so the last pick wins and the other comes off
 const blocked=(h,c,v)=>v!=="None"&&(D.stack.blocks[h]?.includes(c)||D.stack.blockValues[h]?.[c]?.includes(v));
 const clashes=h=>["Eyewear","Mouth"].filter(k=>blocked(h,k,S[k]));
 function applyBlocks(c){
@@ -212,9 +231,9 @@ function applyBlocks(c){
   if(c==="Headwear"){
     const off=clashes(h),names=off.map(k=>S[k]);
     off.forEach(k=>{S[k]="None"});
-    if(names.length)msg=`No real MidEvil wears ${names.join(" or ")} with ${hair}, so ${names.length>1?"they":"it"} came off.`;
+    if(names.length)msg=`No real ${C.name} wears ${names.join(" or ")} with ${hair}, so ${names.length>1?"they":"it"} came off.`;
   }else if(blocked(h,c,S[c])){
-    msg=`No real MidEvil wears ${hair} with ${S[c]}, so ${D.stack.blockValues[h]?`the ${h}`:"the helmet"} came off.`;S.Headwear="None";
+    msg=`No real ${C.name} wears ${hair} with ${S[c]}, so ${D.stack.blockValues[h]?`the ${h}`:"the helmet"} came off.`;S.Headwear="None";
   }
   n.textContent=msg;n.hidden=!msg;
 }
@@ -342,9 +361,9 @@ async function draw(){
       else x.drawImage(i,0,0,cv.width,cv.height)});drawn=my;
   }catch(e){if(my!==ticket)return;$("title").textContent="A layer failed to load. Try again, or reload the page.";$("busy").hidden=true;return}
   $("busy").hidden=true;
-  $("title").textContent=`${S.Skin} MidEvil`;
-  $("cv").setAttribute("aria-label",[S.Skin+" MidEvil",...[...CATS.map(c=>S[c]),hasShape()?S.Shape+" mouth":""].filter(v=>v&&v!=="None")].join(", "));
-  const m=realMatch();$("realhit").textContent=m?`Same traits as MidEvil #${m}`:"No live MidEvil has these traits";
+  $("title").textContent=`${S.Skin} ${C.name}`;
+  $("cv").setAttribute("aria-label",[S.Skin+" "+C.name,...[...CATS.map(c=>S[c]),hasShape()?S.Shape+" mouth":""].filter(v=>v&&v!=="None")].join(", "));
+  const m=realMatch();$("realhit").textContent=m?`Same traits as ${C.name} #${m}`:`No live ${C.name} has these traits`;
 }
 $("rulenote").hidden=true;document.querySelector("main").addEventListener("click",e=>{if(e.target.closest("button"))$("rulenote").hidden=true},true);
 $("roll").onclick=roll;
@@ -355,16 +374,16 @@ $("save").onclick=async()=>{
   if(drawn!==ticket){$("savehint").textContent="That character didn't finish drawing, so nothing was saved.";return}
   const cv=$("cv");let url;
   try{url=cv.toDataURL("image/png")}catch(e){$("savehint").textContent="This browser blocked saving, so nothing was saved.";return}
-  const a=document.createElement("a");a.href=url;a.download=`midevil-${S.Skin}-${Date.now()}.png`.replace(/\s+/g,"-").toLowerCase();document.body.appendChild(a);a.click();a.remove();
+  const a=document.createElement("a");a.href=url;a.download=`${C.file}-${S.Skin}-${Date.now()}.png`.replace(/\s+/g,"-").toLowerCase();document.body.appendChild(a);a.click();a.remove();
   const shot=$("shot");shot.src=url;shot.hidden=false;
   $("savehint").textContent="If no download started, press and hold (or right-click) the portrait and choose Save image.";
 };
 $("lookup").addEventListener("submit",e=>{e.preventDefault();
   const n=$("num").value.trim().replace(/^#/,"");const t=/^\d+$/.test(n)&&Object.hasOwn(D.real,n)?D.real[n]:null;const msg=$("lookmsg");
-  if(!t){msg.textContent=`MidEvil #${n} isn't a live, non-1/1 MidEvil OG, so there are no layers to load for it.`;msg.hidden=false;return}
+  if(!t){msg.textContent=`${C.name} #${n} isn't a live, non-1/1 ${C.live}, so there are no layers to load for it.`;msg.hidden=false;return}
   Object.assign(S,t);const g=grp(S.Skin);const gone=[];
   CATS.forEach(c=>{if(c!=="Background"&&S[c]!=="None"&&!opts(c,g)[S[c]]){gone.push(S[c]);S[c]="None"}});
-  if(gone.length){msg.textContent=`MidEvil #${n} wears ${gone.join(" and ")}, but the artists' board has no ${g} version of ${gone.length>1?"those":"it"}, so ${gone.length>1?"they're":"it's"} left off.`;msg.hidden=false}else msg.hidden=true;
+  if(gone.length){msg.textContent=`${C.name} #${n} wears ${gone.join(" and ")}, but the artists' board has no ${g} version of ${gone.length>1?"those":"it"}, so ${gone.length>1?"they're":"it's"} left off.`;msg.hidden=false}else msg.hidden=true;
   $("skinnote").hidden=true;render();
 });
 // trait areas fold open/closed; on phones they start folded (Skin and mouth stay open) so the portrait is a short scroll away
@@ -377,7 +396,40 @@ function setupFolds(){
     f.onclick=()=>set(f.getAttribute("aria-expanded")!=="true");
   });
 }
-buildSkins();buildShapes();buildCats();setupFolds();render();
+// the words that name the collection
+function wording(){
+  $("tagline").textContent=C.tag;$("foot").textContent=C.foot;
+  $("roll").textContent=`Roll ${C.a}`;$("loadlab").textContent=`Load a real ${C.name}`;
+  $("num").placeholder=`e.g. ${C.eg}`;$("num").setAttribute("aria-label",`${C.name} number`);$("num").value="";
+  $("gallerylink").textContent=`Download your real ${C.name} from the Gallery.`;
+  $("shot").alt=`Your ${C.name}, press and hold to save`;
+  $("set-og").setAttribute("aria-pressed",set==="og"?"true":"false");$("set-orcs").setAttribute("aria-pressed",set==="orcs"?"true":"false");
+}
+// Orc data only loads the first time someone asks for Orcs
+function orcData(){
+  if(window.ORC_DATA)return Promise.resolve(window.ORC_DATA);
+  return new Promise((ok,no)=>{const t=document.createElement("script");t.src="orcs.js?v=1";t.onload=()=>ok(window.ORC_DATA);t.onerror=()=>{t.remove();no()};document.head.appendChild(t)});
+}
+let switching=0;
+async function switchTo(k,push){
+  if(k===set)return;
+  const mine=++switching;
+  let data=window.MIDEVILS_DATA;
+  if(k==="orcs"){$("busy").hidden=false;try{data=await orcData()}catch(e){$("busy").hidden=true;$("savehint").textContent="The Orcs didn't load. Try again, or reload the page.";return}if(mine!==switching)return}
+  saved[set]={...S};
+  set=k;C=SETS[k];D=data;
+  Object.keys(S).forEach(x=>delete S[x]);Object.assign(S,saved[k]||C.start);
+  // locks belong to one collection's traits
+  ["Skin","Shape",...CATS].forEach(c=>{locks[c]=false;const b=$("lock-"+c);b.setAttribute("aria-pressed","false");b.textContent="Lock"});
+  CATS.forEach(c=>{delete built[c]});
+  ["rulenote","skinnote","lookmsg"].forEach(i=>{$(i).hidden=true});$("shot").hidden=true;
+  buildSkins();wording();
+  if(push){const u=new URL(location.href);if(k==="orcs")u.searchParams.set("set","orcs");else u.searchParams.delete("set");history.replaceState(null,"",u)}
+  render();
+}
+$("set-og").onclick=()=>switchTo("og",true);$("set-orcs").onclick=()=>switchTo("orcs",true);
+buildSkins();buildShapes();buildCats();setupFolds();wording();render();
+if(new URLSearchParams(location.search).get("set")==="orcs")switchTo("orcs",false);
 })();
 </script>
 </body>
