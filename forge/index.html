@@ -175,12 +175,12 @@ footer{color:var(--text-secondary);font-size:.8rem;max-width:70ch}
 </main>
 
 
-<script src="data.js?v=9"></script>
+<script src="data.js?v=10"></script>
 <script>
 (()=>{
 const D=window.MIDEVILS_DATA;
 const CATS=["Background","Clothing","Eyewear","Headwear","Mouth","Specialty"];
-const BEASTS=["Eagle","Wolf","Tiger","Gorilla","Creature","Dragon"];
+const BEASTS=["Eagle","Wolf","Tiger","Gorilla","Creature"];
 const SHAPES=["Open","Closed"];
 const S={Background:"Tan",Skin:"Sand",Shape:"Closed",Clothing:"Letterman",Eyewear:"None",Headwear:"Burnt Tips",Mouth:"None",Specialty:"None"};
 const locks={};const imgs=new Map();const KEEP_IMGS=60;
@@ -197,7 +197,7 @@ function load(f){let p=imgs.get(f);if(p)imgs.delete(f);else p=new Promise((ok,no
 function buildSkins(){
   const hum=Object.keys(D.skins).filter(s=>grp(s)==="Human").sort();
   const box=$("skins");box.innerHTML="";
-  [["Humans",hum],["Beasts",BEASTS]].forEach(([t,list])=>{
+  [["Skins",hum],["Beasts",BEASTS]].forEach(([t,list])=>{
     const h=document.createElement("div");h.className="sub";h.textContent=t;box.appendChild(h);
     const row=document.createElement("div");row.className="skin-row";
     list.forEach(s=>{const b=document.createElement("button");b.className="chip";b.dataset.skin=s;b.setAttribute("aria-pressed","false");
@@ -306,7 +306,7 @@ function realMatch(){
 const patchOf=g=>D.stack.patches.find(p=>p.groups.includes(g)&&p.Headwear===S.Headwear&&p.Clothing===S.Clothing);
 // layer order, worked out by comparing every real MidEvil: glasses, hair and mouth traits overlap differently depending on the pair
 function stackOrder(g){
-  const T=D.stack,cl=g==="Dragon"?"Human":g;
+  const T=D.stack,cl=g;
   let eyeTop=T.eyewearOnTop.includes(S.Eyewear)||!T.hairOverEyewear.includes(S.Headwear);
   if(T.flip.includes(`${cl}|${S.Headwear}|${S.Eyewear}`))eyeTop=!eyeTop;
   const top=eyeTop?["Headwear","Eyewear"]:["Eyewear","Headwear"];
